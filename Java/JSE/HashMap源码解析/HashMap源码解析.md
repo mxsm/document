@@ -51,10 +51,99 @@ HashMap之前实现
 常见的算法时间复杂度由小到大依次为：  Ο(1)＜Ο(log2n)＜Ο(n)＜Ο(nlog2n)＜Ο(n2)＜Ο(n3)＜…＜Ο(2n)＜Ο(n!)
 
 #### JDK8 HashMap
-HashMap数据结构示意图见：![HashMap内部结构图示](https://github.com/mxsm/document/tree/master/image/hashmapdatastruct.png?raw=true)
+HashMap数据结构示意图见：![HashMap内部结构图示](https://github.com/mxsm/document/blob/master/image/hashmapdatastruct.png?raw=true)
+
+HashMap几个重要的变量：
+
+```java
+   /**
+     * The default initial capacity - MUST be a power of two.
+     * 默认的容量16--并且容量必须是2的幂
+     */
+    static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; //16
+	/**
+     * 最大限度容量
+     * 
+     */
+	static final int MAXIMUM_CAPACITY = 1 << 30;
+
+	/**
+     * 默认加载因子0.75f
+     */
+    static final float DEFAULT_LOAD_FACTOR = 0.75f;
+
+	/**
+     * 链表转换为红黑树的阈值
+     */
+    static final int TREEIFY_THRESHOLD = 8;
+
+ 	/**
+     * 红黑树转换为链表的阈值
+     */
+    static final int UNTREEIFY_THRESHOLD = 6;
+
+   /**
+     * 如果在创建HashMap实例时没有给定capacity、loadFactor则默认值分别是16和0.75
+     * 当好多bin被映射到同一个桶时，如果这个桶中bin的数量小于TREEIFY_THRESHOLD当然不
+     * 会转化成树形结构存储；如果这个桶中bin的数量大于了 TREEIFY_THRESHOLD ，
+     * 但是capacity小于MIN_TREEIFY_CAPACITY则依然使用链表结构进行存储，此时会对H
+     * ashMap进行扩容；如果capacity大于了MIN_TREEIFY_CAPACITY ，则会进行树化。
+     */
+    static final int MIN_TREEIFY_CAPACITY = 64;
+
+   /**
+     * The table, initialized on first use, and resized as
+     * necessary. When allocated, length is always a power of two.
+     * (We also tolerate length zero in some operations to allow
+     * bootstrapping mechanics that are currently not needed.)
+     * 保存HashMap的数据结构，使用懒加载方式，分配长度总是2的幂。
+     */
+    transient Node<K,V>[] table;
+
+    /**
+     * Holds cached entrySet(). Note that AbstractMap fields are used
+     * for keySet() and values().
+     */
+    transient Set<Map.Entry<K,V>> entrySet;
+
+    /**
+     * The number of key-value mappings contained in this map.
+     * K-V map中保存的数量  -- 方法size() 获取的就是这个字段
+     */
+    transient int size;
+
+    /**
+     * The number of times this HashMap has been structurally modified
+     * Structural modifications are those that change the number of mappings in
+     * the HashMap or otherwise modify its internal structure (e.g.,
+     * rehash).  This field is used to make iterators on Collection-views of
+     * the HashMap fail-fast.  (See ConcurrentModificationException).
+     * HashMap的数据结构改变的次数
+     */
+    transient int modCount;
+
+    /**
+     * The next size value at which to resize (capacity * load factor).
+     * 扩容的阈值
+     * @serial
+     */
+    // (The javadoc description is true upon serialization.
+    // Additionally, if the table array has not been allocated, this
+    // field holds the initial array capacity, or zero signifying
+    // DEFAULT_INITIAL_CAPACITY.)
+    int threshold;
+
+    /**
+     * The load factor for the hash table.
+     * 负载因子
+     * @serial
+     */
+    final float loadFactor;
+```
+
 节点：
 
-```
+```java
 static class Node<K,V> implements Map.Entry<K,V> {
     //哈希值，就是位置
     final int hash;
@@ -69,7 +158,7 @@ static class Node<K,V> implements Map.Entry<K,V> {
 ```
 红黑树节点
 
-```
+```java
 
 static final class TreeNode<K,V> extends LinkedHashMap.Entry<K,V> {
     TreeNode<K,V> parent;  // red-black tree links
@@ -80,11 +169,30 @@ static final class TreeNode<K,V> extends LinkedHashMap.Entry<K,V> {
 }
 ```
 
+方法：**tableSizeFor--找到最接近传入cap的2的幂**
+
+```java
+static final int tableSizeFor(int cap) {
+        int n = cap - 1;
+        n |= n >>> 1;
+        n |= n >>> 2;
+        n |= n >>> 4;
+        n |= n >>> 8;
+        n |= n >>> 16;
+    	//(n < 0) ? 1:()后面的 (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1是
+    	//是一块
+        return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+    }
+```
+
+**tableSizeFor**方法图解如下：
+
+![图解](https://github.com/mxsm/document/blob/master/image/tablesize%E7%A4%BA%E6%84%8F%E5%9B%BE.png?raw=true)
+
 方法：**put--存入数据**
 
-```
-final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
-                   boolean evict) {
+```java
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,boolean evict) {
         Node<K,V>[] tab; 
         Node<K,V> p; 
         //桶的容量
@@ -95,26 +203,32 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
         if ((tab = table) == null || (n = tab.length) == 0)
             //懒加载---没有初始化进行初始化
             n = (tab = resize()).length;
+    	//获取hash桶
         if ((p = tab[i = (n - 1) & hash]) == null)
             //没有哈希碰撞直接放在对应的桶中
             tab[i] = newNode(hash, key, value, null);
         else {
             Node<K,V> e; 
             K k;
-            //判断桶的第一个链表节点是否和插入的数据相等
+            //判断桶的第一个节点是否和插入的数据相等--不是走下一个else if
             if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k))))
                 e = p;
+            //判断是否已经转换为红黑树了--不是走下面的else
             else if (p instanceof TreeNode)
-            //判断是否已经转换为红黑树了--做红黑树的操作
+               //做红黑树的插入数据操作
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+             
             else {
+             //桶里面的数据还是链表的结构
             //遍历查找替换或者直接存放到链表最后面
                 for (int binCount = 0; ; ++binCount) {
                 //找到下一个节点为空的节点
                     if ((e = p.next) == null) {
+                   		//插入链表的下一个节点
                         p.next = newNode(hash, key, value, null);
-                        //判断是否要将链表结构转换成红黑树
+                        //判断是否要将链表结构转换成红黑树(TREEIFY_THRESHOLD=8)
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                            //桶容器的链表转换为红黑树
                             treeifyBin(tab, hash);
                         break;
                     }
@@ -133,7 +247,9 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                 return oldValue;
             }
         }
+    	//更新修改次数
         ++modCount;
+    	//增加map的size
         if (++size > threshold)
         //大于阈值扩容
             resize();
@@ -141,10 +257,45 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
         return null;
     }
 ```
+方法：**treeifyBin—链表转换为红黑树**
+
+```java
+final void treeifyBin(Node<K,V>[] tab, int hash) {
+        int n, index; Node<K,V> e;
+    	//tab为空进行扩容
+    	//tab的容量小于MIN_TREEIFY_CAPACITY进行扩容
+        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+            resize();
+        else if ((e = tab[index = (n - 1) & hash]) != null) {
+            //获取到节点进行链表转换为红黑树
+            TreeNode<K,V> hd = null, tl = null;
+            do {
+                //Node --> TreeNode
+                TreeNode<K,V> p = replacementTreeNode(e, null);
+                if (tl == null)
+                    hd = p;
+                else {
+                    p.prev = tl;
+                    tl.next = p;
+                }
+                tl = p;
+            } while ((e = e.next) != null);
+            if ((tab[index] = hd) != null)
+                //红黑树退化为链表
+                hd.treeify(tab);
+        }
+    }
+```
+
+**注意链表的转换为红黑树的两个条件**：
+
+1. 链表的长度>=TREEIFY_THRESHOLD（8为默认值）
+2. 容量>=MIN_TREEIFY_CAPACITY(64默认值)
+
 方法：**putTreeVal--红黑树的添加操作**
 
 
-```
+```java
 final TreeNode<K,V> putTreeVal(HashMap<K,V> map, Node<K,V>[] tab,int h, K k, V v) {
             Class<?> kc = null;
             boolean searched = false;
@@ -385,7 +536,7 @@ static <K,V> TreeNode<K,V> balanceInsertion(TreeNode<K,V> root,TreeNode<K,V> x) 
 ```
 方法：**split--树形结构修剪**
 
-```
+```java
 //tab 表示保存桶头结点的哈希表
 //index 表示从哪个位置开始修剪
 //bit 要修剪的位数（哈希值）
