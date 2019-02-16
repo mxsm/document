@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>org.apache.dubbo.remoting.Channel</OriginalElement>
+  <nodes>
+    <node x="1063.203869047619" y="168.0">org.apache.dubbo.remoting.handler.MockedChannel</node>
+    <node x="1591.498511904762" y="326.0">org.apache.dubbo.remoting.transport.netty4.NettyClient</node>
+    <node x="719.8735119047619" y="168.0">org.apache.dubbo.remoting.exchange.ExchangeChannel</node>
+    <node x="0.0" y="247.0">org.apache.dubbo.remoting.transport.grizzly.GrizzlyChannel</node>
+    <node x="1459.498511904762" y="326.0">org.apache.dubbo.remoting.transport.mina.MinaClient</node>
+    <node x="1020.3735119047618" y="0.0">org.apache.dubbo.remoting.Endpoint</node>
+    <node x="1266.7619047619048" y="168.0">org.apache.dubbo.remoting.Client</node>
+    <node x="344.8735119047619" y="168.0">org.apache.dubbo.remoting.codec.AbstractMockChannel</node>
+    <node x="855.828869047619" y="247.0">org.apache.dubbo.remoting.exchange.ExchangeClient</node>
+    <node x="1865.498511904762" y="326.0">org.apache.dubbo.remoting.transport.grizzly.GrizzlyClient</node>
+    <node x="749.8735119047619" y="79.0">org.apache.dubbo.remoting.Channel</node>
+    <node x="173.87351190476193" y="168.0">org.apache.dubbo.remoting.transport.AbstractChannel</node>
+    <node x="819.4985119047619" y="326.0">org.apache.dubbo.remoting.exchange.support.header.HeaderExchangeClient</node>
+    <node x="598.1369047619048" y="247.0">org.apache.dubbo.remoting.exchange.support.header.HeaderExchangeChannel</node>
+    <node x="576.4985119047619" y="326.0">org.apache.dubbo.rpc.protocol.dubbo.LazyConnectExchangeClient</node>
+    <node x="1728.498511904762" y="326.0">org.apache.dubbo.remoting.transport.netty.NettyClient</node>
+    <node x="1699.7619047619048" y="247.0">org.apache.dubbo.remoting.transport.AbstractClient</node>
+    <node x="1288.498511904762" y="326.0">org.apache.dubbo.rpc.protocol.dubbo.ChannelWrappedInvoker.ChannelWrapper</node>
+    <node x="912.203869047619" y="168.0">org.apache.dubbo.remoting.exchange.support.header.MockChannel</node>
+    <node x="548.8735119047619" y="168.0">org.apache.dubbo.remoting.transport.ChannelDelegate</node>
+    <node x="1295.998511904762" y="247.0">org.apache.dubbo.remoting.transport.ClientDelegate</node>
+    <node x="1026.498511904762" y="326.0">org.apache.dubbo.rpc.protocol.dubbo.ReferenceCountExchangeClient</node>
+    <node x="159.9999999999999" y="247.0">org.apache.dubbo.remoting.transport.netty4.NettyChannel</node>
+    <node x="311.9999999999999" y="247.0">org.apache.dubbo.remoting.transport.mina.MinaChannel</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="org.apache.dubbo.remoting.handler.MockedChannel" target="org.apache.dubbo.remoting.Channel">
+      <point x="0.0" y="-14.5" />
+      <point x="1136.203869047619" y="138.0" />
+      <point x="826.8735119047618" y="138.0" />
+      <point x="27.999999999999886" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.exchange.support.header.MockChannel" target="org.apache.dubbo.remoting.Channel">
+      <point x="-1.1368683772161603E-13" y="-14.5" />
+      <point x="977.7038690476189" y="148.0" />
+      <point x="812.8735119047618" y="148.0" />
+      <point x="13.999999999999886" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.rpc.protocol.dubbo.ChannelWrappedInvoker.ChannelWrapper" target="org.apache.dubbo.remoting.transport.ClientDelegate">
+      <point x="0.0" y="-14.5" />
+      <point x="0.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.grizzly.GrizzlyClient" target="org.apache.dubbo.remoting.transport.AbstractClient">
+      <point x="0.0" y="-14.5" />
+      <point x="1927.998511904762" y="306.0" />
+      <point x="1818.7619047619048" y="306.0" />
+      <point x="51.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.mina.MinaClient" target="org.apache.dubbo.remoting.transport.AbstractClient">
+      <point x="0.0" y="-14.5" />
+      <point x="1515.498511904762" y="296.0" />
+      <point x="1716.7619047619048" y="296.0" />
+      <point x="-51.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.AbstractChannel" target="org.apache.dubbo.remoting.Channel">
+      <point x="37.75" y="-14.5" />
+      <point x="287.1235119047619" y="128.0" />
+      <point x="756.8735119047619" y="128.0" />
+      <point x="-42.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.ClientDelegate" target="org.apache.dubbo.remoting.Client">
+      <point x="0.0" y="-14.5" />
+      <point x="1363.998511904762" y="227.0" />
+      <point x="1308.2619047619048" y="227.0" />
+      <point x="0.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.netty4.NettyChannel" target="org.apache.dubbo.remoting.transport.AbstractChannel">
+      <point x="0.0" y="-14.5" />
+      <point x="225.9999999999999" y="227.0" />
+      <point x="249.37351190476193" y="227.0" />
+      <point x="0.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.Client" target="org.apache.dubbo.remoting.Endpoint">
+      <point x="20.75" y="-14.5" />
+      <point x="1329.0119047619048" y="59.0" />
+      <point x="1085.373511904762" y="59.0" />
+      <point x="13.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.ChannelDelegate" target="org.apache.dubbo.remoting.Channel">
+      <point x="0.0" y="-14.5" />
+      <point x="624.3735119047619" y="148.0" />
+      <point x="784.8735119047619" y="148.0" />
+      <point x="-14.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.grizzly.GrizzlyChannel" target="org.apache.dubbo.remoting.transport.AbstractChannel">
+      <point x="0.0" y="-14.5" />
+      <point x="70.0" y="227.0" />
+      <point x="199.04017857142856" y="227.0" />
+      <point x="-50.33333333333334" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.Client" target="org.apache.dubbo.remoting.Channel">
+      <point x="-20.75" y="-14.5" />
+      <point x="1287.5119047619048" y="128.0" />
+      <point x="840.8735119047618" y="128.0" />
+      <point x="41.999999999999886" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.AbstractClient" target="org.apache.dubbo.remoting.Client">
+      <point x="-34.0" y="-14.5" />
+      <point x="1733.7619047619048" y="217.0" />
+      <point x="1335.9285714285716" y="217.0" />
+      <point x="27.666666666666742" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.Channel" target="org.apache.dubbo.remoting.Endpoint">
+      <point x="-1.1368683772161603E-13" y="-14.5" />
+      <point x="798.8735119047618" y="59.0" />
+      <point x="1059.373511904762" y="59.0" />
+      <point x="-13.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.netty4.NettyClient" target="org.apache.dubbo.remoting.transport.AbstractClient">
+      <point x="0.0" y="-14.5" />
+      <point x="1649.998511904762" y="306.0" />
+      <point x="1750.7619047619048" y="306.0" />
+      <point x="-17.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.exchange.ExchangeClient" target="org.apache.dubbo.remoting.Client">
+      <point x="35.75" y="-14.5" />
+      <point x="963.078869047619" y="227.0" />
+      <point x="1280.595238095238" y="227.0" />
+      <point x="-27.666666666666742" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.codec.AbstractMockChannel" target="org.apache.dubbo.remoting.Channel">
+      <point x="0.0" y="-14.5" />
+      <point x="436.8735119047619" y="138.0" />
+      <point x="770.8735119047619" y="138.0" />
+      <point x="-28.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.rpc.protocol.dubbo.LazyConnectExchangeClient" target="org.apache.dubbo.remoting.exchange.ExchangeClient">
+      <point x="0.0" y="-14.5" />
+      <point x="687.9985119047619" y="306.0" />
+      <point x="879.6622023809524" y="306.0" />
+      <point x="-47.66666666666663" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.AbstractChannel" target="org.apache.dubbo.remoting.Endpoint">
+      <point x="-37.75" y="-14.5" />
+      <point x="211.62351190476193" y="49.0" />
+      <point x="1033.373511904762" y="49.0" />
+      <point x="-39.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.exchange.support.header.HeaderExchangeChannel" target="org.apache.dubbo.remoting.exchange.ExchangeChannel">
+      <point x="0.0" y="-14.5" />
+      <point x="699.1369047619048" y="227.0" />
+      <point x="759.3735119047619" y="227.0" />
+      <point x="-39.5" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.exchange.ExchangeClient" target="org.apache.dubbo.remoting.exchange.ExchangeChannel">
+      <point x="-35.75" y="-14.5" />
+      <point x="891.578869047619" y="227.0" />
+      <point x="838.3735119047619" y="227.0" />
+      <point x="39.5" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.AbstractClient" target="org.apache.dubbo.remoting.Endpoint">
+      <point x="34.0" y="-14.5" />
+      <point x="1801.7619047619048" y="49.0" />
+      <point x="1111.373511904762" y="49.0" />
+      <point x="39.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.mina.MinaChannel" target="org.apache.dubbo.remoting.transport.AbstractChannel">
+      <point x="0.0" y="-14.5" />
+      <point x="375.4999999999999" y="227.0" />
+      <point x="299.7068452380953" y="227.0" />
+      <point x="50.33333333333337" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.exchange.ExchangeChannel" target="org.apache.dubbo.remoting.Channel">
+      <point x="0.0" y="-14.5" />
+      <point x="0.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.exchange.support.header.HeaderExchangeClient" target="org.apache.dubbo.remoting.exchange.ExchangeClient">
+      <point x="0.0" y="-14.5" />
+      <point x="912.9985119047619" y="306.0" />
+      <point x="927.328869047619" y="306.0" />
+      <point x="0.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.remoting.transport.netty.NettyClient" target="org.apache.dubbo.remoting.transport.AbstractClient">
+      <point x="0.0" y="-14.5" />
+      <point x="1786.998511904762" y="306.0" />
+      <point x="1784.7619047619048" y="306.0" />
+      <point x="17.0" y="14.5" />
+    </edge>
+    <edge source="org.apache.dubbo.rpc.protocol.dubbo.ReferenceCountExchangeClient" target="org.apache.dubbo.remoting.exchange.ExchangeClient">
+      <point x="0.0" y="-14.5" />
+      <point x="1147.498511904762" y="306.0" />
+      <point x="974.9955357142857" y="306.0" />
+      <point x="47.66666666666663" y="14.5" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="0.9603679761312779" x="1211.6934707192047" y="-72.14073422047323" />
+  <SelectedNodes />
+  <Categories />
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
