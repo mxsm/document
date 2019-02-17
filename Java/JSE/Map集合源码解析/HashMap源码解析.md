@@ -51,7 +51,7 @@ HashMap之前实现
 常见的算法时间复杂度由小到大依次为：  Ο(1)＜Ο(log2n)＜Ο(n)＜Ο(nlog2n)＜Ο(n2)＜Ο(n3)＜…＜Ο(2n)＜Ο(n!)
 
 #### JDK8 HashMap
-HashMap数据结构示意图见：![HashMap内部结构图示](https://github.com/mxsm/document/blob/master/image/hashmapdatastruct.png?raw=true)
+HashMap数据结构示意图见(哈希表+单链表+红黑树)：![HashMap内部结构图示](https://github.com/mxsm/document/blob/master/image/datastructure/hashmapdatastruct.png?raw=true)
 
 HashMap几个重要的变量：
 
@@ -187,7 +187,7 @@ static final int tableSizeFor(int cap) {
 
 **tableSizeFor**方法图解如下：
 
-![图解](https://github.com/mxsm/document/blob/master/image/tablesize%E7%A4%BA%E6%84%8F%E5%9B%BE.png?raw=true)
+![图解](https://github.com/mxsm/document/blob/master/image/datastructure/tablesize%E7%A4%BA%E6%84%8F%E5%9B%BE.png?raw=true)
 
 方法：**put--存入数据**
 
@@ -366,8 +366,9 @@ static <K,V> TreeNode<K,V> balanceInsertion(TreeNode<K,V> root,TreeNode<K,V> x) 
                 else if (!xp.red || (xpp = xp.parent) == null)
                 // 父节点是黑色，祖父节点为空，直接返回
                     return root;
-                
                 //一下处理为逻辑--父节点是红色
+                
+                //父节点为祖父节点的左节点
                 if (xp == (xppl = xpp.left)) {
                     //父节点是祖父节点的左节点
                     if ((xppr = xpp.right) != null && xppr.red) {
@@ -395,13 +396,13 @@ static <K,V> TreeNode<K,V> balanceInsertion(TreeNode<K,V> root,TreeNode<K,V> x) 
                                 // 祖父节点不为空
                                 // 祖父节点设为红色
                                 xpp.red = true;
-                                / 以祖父节点为支点右旋转
+                                // 以祖父节点为支点右旋转
                                 root = rotateRight(root, xpp);
                             }
                         }
                     }
                 }
-                 // 父亲节点为右节点
+                 //父节点为祖父节点的右节点
                 else {
                     if (xppl != null && xppl.red) {
                         // 叔父节点为红色
@@ -426,6 +427,46 @@ static <K,V> TreeNode<K,V> balanceInsertion(TreeNode<K,V> root,TreeNode<K,V> x) 
                     }
                 }
             }
+        }
+```
+
+方法：**rotateLeft和rotateRight**
+
+```java
+//红黑树左旋
+static <K,V> TreeNode<K,V> rotateLeft(TreeNode<K,V> root,TreeNode<K,V> p) {
+            TreeNode<K,V> r, pp, rl;
+            if (p != null && (r = p.right) != null) {
+                if ((rl = p.right = r.left) != null)
+                    rl.parent = p;
+                if ((pp = r.parent = p.parent) == null)
+                    (root = r).red = false;
+                else if (pp.left == p)
+                    pp.left = r;
+                else
+                    pp.right = r;
+                r.left = p;
+                p.parent = r;
+            }
+            return root;
+        }
+
+//红黑树右旋
+static <K,V> TreeNode<K,V> rotateRight(TreeNode<K,V> root,TreeNode<K,V> p) {
+            TreeNode<K,V> l, pp, lr;
+            if (p != null && (l = p.left) != null) {
+                if ((lr = p.left = l.right) != null)
+                    lr.parent = p;
+                if ((pp = l.parent = p.parent) == null)
+                    (root = l).red = false;
+                else if (pp.right == p)
+                    pp.right = l;
+                else
+                    pp.left = l;
+                l.right = p;
+                p.parent = l;
+            }
+            return root;
         }
 ```
 
@@ -592,6 +633,69 @@ final void split(HashMap<K,V> map, Node<K,V>[] tab, int index, int bit) {
             }
         }
 ```
+
+方法：**remove--删除**
+
+```java
+    /**
+     * Implements Map.remove and related methods.
+     *
+     * @param hash key的哈希值
+     * @param key the key
+     * @param value the value to match if matchValue, else ignored
+     * @param matchValue if true only remove if value is equal
+     * @param movable if false do not move other nodes while removing
+     * @return the node, or null if none
+     */
+    final Node<K,V> removeNode(int hash, Object key, Object value,
+                               boolean matchValue, boolean movable) {
+        Node<K,V>[] tab; 
+        Node<K,V> p; 
+        int n;//哈希表长度保存变量
+        int index; //哈希表的索引
+        if ((tab = table) != null && (n = tab.length) > 0 &&
+            (p = tab[index = (n - 1) & hash]) != null) {
+            Node<K,V> node = null, e; K k; V v;
+            if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k))))
+                node = p;
+            else if ((e = p.next) != null) {
+                if (p instanceof TreeNode)
+                    //红黑树查找
+                    node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
+                else {
+                    //链表查找
+                    do {
+                        if (e.hash == hash &&
+                            ((k = e.key) == key ||
+                             (key != null && key.equals(k)))) {
+                            node = e;
+                            break;
+                        }
+                        p = e;
+                    } while ((e = e.next) != null);
+                }
+            }
+            if (node != null && (!matchValue || (v = node.value) == value ||
+                                 (value != null && value.equals(v)))) {
+                if (node instanceof TreeNode)
+                    //红黑树删除
+                    ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
+                else if (node == p)
+                	//链表删除
+                    tab[index] = node.next;
+                else
+                    p.next = node.next;
+                ++modCount;
+                --size;
+                afterNodeRemoval(node);
+                return node;
+            }
+        }
+        return null;
+    }
+```
+
 
 
 ### 相关参考链接
