@@ -51,7 +51,7 @@ HashMap之前实现
 常见的算法时间复杂度由小到大依次为：  Ο(1)＜Ο(log2n)＜Ο(n)＜Ο(nlog2n)＜Ο(n2)＜Ο(n3)＜…＜Ο(2n)＜Ο(n!)
 
 #### JDK8 HashMap
-HashMap数据结构示意图见(哈希表+单链表+红黑树)：![HashMap内部结构图示](https://github.com/mxsm/document/blob/master/image/datastructure/hashmapdatastruct.png?raw=true)
+HashMap数据结构示意图见(哈希表+单链表+红黑树)：![HashMap内部结构图示](https://github.com/mxsm/document/blob/master/image/JSE/hashmapdatastruct.png?raw=true)
 
 HashMap几个重要的变量：
 
@@ -187,7 +187,7 @@ static final int tableSizeFor(int cap) {
 
 **tableSizeFor**方法图解如下：
 
-![图解](https://github.com/mxsm/document/blob/master/image/datastructure/tablesize%E7%A4%BA%E6%84%8F%E5%9B%BE.png?raw=true)
+![图解](https://github.com/mxsm/document/blob/master/image/JSE/tablesize%E7%A4%BA%E6%84%8F%E5%9B%BE.png?raw=true)
 
 方法：**put--存入数据**
 
@@ -575,6 +575,20 @@ static <K,V> TreeNode<K,V> rotateRight(TreeNode<K,V> root,TreeNode<K,V> p) {
         return newTab;
     }
 ```
+下列代码的图解：
+
+```java
+(e.hash & oldCap) == 0
+```
+
+![图解](https://github.com/mxsm/document/blob/master/image/JSE/hashMap1.8%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95%E4%BE%8B%E5%9B%BE1.png?raw=true)
+
+![图解](https://github.com/mxsm/document/blob/master/image/JSE/hashMap1.8%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95%E4%BE%8B%E5%9B%BE2.png?raw=true)
+
+![图解](https://github.com/mxsm/document/blob/master/image/JSE/jdk1.8hashMap%E6%89%A9%E5%AE%B9%E4%BE%8B%E5%9B%BE.png?raw=true)
+
+
+
 方法：**split--树形结构修剪**
 
 ```java
@@ -694,6 +708,137 @@ final void split(HashMap<K,V> map, Node<K,V>[] tab, int index, int bit) {
         }
         return null;
     }
+```
+
+方法：**removeTreeNode—红黑树删除节点**
+
+```java
+final void removeTreeNode(HashMap<K,V> map, Node<K,V>[] tab,boolean movable) {
+            int n;
+            if (tab == null || (n = tab.length) == 0)
+                return;
+            int index = (n - 1) & hash;
+    		//获取到哈希表的第一个节点
+            TreeNode<K,V> first = (TreeNode<K,V>)tab[index]; 
+    		//哈希表的第一个节点即为红黑树的跟节点
+    		TreeNode<K,V>  root = first;
+    		TreeNode<K,V> rl;
+    		//删除节点的下一个节点--链表的情况
+            TreeNode<K,V> succ = (TreeNode<K,V>)next;
+    		//删除节点的前一个节点
+    		TreeNode<K,V> pred = prev;
+    
+    		//pred节点为空说明删除节点为跟节点
+            if (pred == null)
+                tab[index] = first = succ;
+            else
+                //pred非空的--前一个节点的下一个节点为删除节点的下一个节点
+                pred.next = succ;
+    		
+            if (succ != null)
+                //删除节点的下一个节点不为空将将删除节点的next节点的prev节点设置为删除节点的前一个节点
+                succ.prev = pred;
+    		
+            if (first == null)
+                //first为空说明删除的是根节点且没有其他节点
+                //若删除的结点是树中的唯一结点则直接结束
+                return;
+    
+            if (root.parent != null)
+                //获取根节点--确保root指向根节点
+                root = root.root();
+    
+            if (root == null || root.right == null ||
+                (rl = root.left) == null || rl.left == null) {
+                // 根自身或者左右儿子其中一个为空说明结点数过少（不超过2）转为线性表并结束
+                tab[index] = first.untreeify(map);  // too small
+                return;
+            }
+    		
+    		
+            TreeNode<K,V> p = this;//指向删除节点
+    		TreeNode<K,V> pl = left;//指向删除节点的左子树
+    		TreeNode<K,V> pr = right;//指向删除节点的右子树
+    		TreeNode<K,V> replacement;//替代的节点
+    		//删除节点的左右节点都不为空
+            if (pl != null && pr != null) {
+                TreeNode<K,V> s = pr;
+                TreeNode<K,V> sl;
+                //找到删除节点的hashCode最小值--二叉查找树的删除原理
+                //删除结点的左右儿子都不为空时，寻找右子树中最左的叶结点作为后继，s指向这个后继结点
+                while ((sl = s.left) != null) // find successor
+                    s = sl;
+                //交换s和删除节点p的颜色--交换后继结点和要删除结点的颜色
+                boolean c = s.red; 
+                boolean s.red = p.red;
+                boolean  p.red = c; // swap colors
+                
+                TreeNode<K,V> sr = s.right;
+                TreeNode<K,V> pp = p.parent;
+                //交换s和p的位置
+                if (s == pr) { // p was s's direct parent
+                    p.parent = s;
+                    s.right = p;
+                }
+                else {
+                    TreeNode<K,V> sp = s.parent;
+                    if ((p.parent = sp) != null) {
+                        if (s == sp.left)
+                            sp.left = p;
+                        else
+                            sp.right = p;
+                    }
+                    if ((s.right = pr) != null)
+                        pr.parent = s;
+                }
+                p.left = null;
+                if ((p.right = sr) != null)
+                    sr.parent = p;
+                if ((s.left = pl) != null)
+                    pl.parent = s;
+                if ((s.parent = pp) == null)
+                    root = s;
+                else if (p == pp.left)
+                    pp.left = s;
+                else
+                    pp.right = s;
+                if (sr != null)
+                    replacement = sr;
+                else
+                    replacement = p;
+            }
+            else if (pl != null)
+                replacement = pl;
+            else if (pr != null)
+                replacement = pr;
+            else
+                replacement = p;
+            if (replacement != p) {
+                TreeNode<K,V> pp = replacement.parent = p.parent;
+                if (pp == null)
+                    root = replacement;
+                else if (p == pp.left)
+                    pp.left = replacement;
+                else
+                    pp.right = replacement;
+                p.left = p.right = p.parent = null;
+            }
+
+            TreeNode<K,V> r = p.red ? root : balanceDeletion(root, replacement);
+
+            if (replacement == p) {  // detach
+                TreeNode<K,V> pp = p.parent;
+                p.parent = null;
+                if (pp != null) {
+                    if (p == pp.left)
+                        pp.left = null;
+                    else if (p == pp.right)
+                        pp.right = null;
+                }
+            }
+            if (movable)
+                moveRootToFront(tab, r);
+        }
 ```
 
 
