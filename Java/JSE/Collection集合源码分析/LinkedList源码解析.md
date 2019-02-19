@@ -14,7 +14,7 @@ private static class Node<E> {
     }
 ```
 
-从数据结构可以看出来**LinkedList**的数据结构是一个双向的链表
+- 底层的数据结构为双向链表
 
 ![双向链表图示](https://github.com/mxsm/document/blob/master/image/datastructure/Doubly-linked-list.svg.png?raw=true)
 
