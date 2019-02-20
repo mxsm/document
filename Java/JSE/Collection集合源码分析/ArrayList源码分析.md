@@ -1,3 +1,7 @@
+### ArrayList
+
+ArrayList并不是线程安全的，在读线程在读取ArrayList的时候如果有写线程在写数据的时候，基于fast-fail机制，会抛出**ConcurrentModificationException**异常，也就是说ArrayList并不是一个线程安全的容器
+
 ### 构造方法
 
 ```java
