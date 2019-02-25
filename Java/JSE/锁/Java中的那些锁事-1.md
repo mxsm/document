@@ -677,3 +677,69 @@ protected final boolean tryAcquire(int acquires) {
 5. 对于非公平锁**`writerShouldBlock()`**一直返回的是false,所以看后面的**`compareAndSetState`**的设置如果失败返回**`false`**获取写锁失败
 6. **`compareAndSetState`**设置成功，设置当前说的拥有者为现在获取线程的对象。
 
+------
+
+**`ReentrantReadWriteLock.ReadLock`**的加锁代码
+
+```java
+        @ReservedStackAccess
+        protected final int tryAcquireShared(int unused) {
+            /*
+             * Walkthrough:
+             * 1. 如果另一个线程持有写锁,获取读锁失败.
+             * 2. Otherwise, this thread is eligible for
+             *    lock write state, so ask if it should block
+             *    because of queue policy. If not, try
+             *    to grant by CASing state and updating count.
+             *    Note that step does not check for reentrant
+             *    acquires, which is postponed to full version
+             *    to avoid having to check hold count in
+             *    the more typical non-reentrant case.
+             * 3. If step 2 fails either because thread
+             *    apparently not eligible or CAS fails or count
+             *    saturated, chain to version with full retry loop.
+             */
+            Thread current = Thread.currentThread();
+            int c = getState();
+            if (exclusiveCount(c) != 0 &&
+                getExclusiveOwnerThread() != current)
+                return -1;
+            int r = sharedCount(c);
+            if (!readerShouldBlock() &&
+                r < MAX_COUNT &&
+                compareAndSetState(c, c + SHARED_UNIT)) {
+                if (r == 0) {
+                    firstReader = current;
+                    firstReaderHoldCount = 1;
+                } else if (firstReader == current) {
+                    firstReaderHoldCount++;
+                } else {
+                    HoldCounter rh = cachedHoldCounter;
+                    if (rh == null ||
+                        rh.tid != LockSupport.getThreadId(current))
+                        cachedHoldCounter = rh = readHolds.get();
+                    else if (rh.count == 0)
+                        readHolds.set(rh);
+                    rh.count++;
+                }
+                return 1;
+            }
+            return fullTryAcquireShared(current);
+        }
+```
+
+可以看到在tryAcquireShared(int 
+unused)方法中，如果其他线程已经获取了写锁，则当前线程获取读锁失败，进入等待状态。如果当前线程获取了写锁或者写锁未被获取，则当前线程（线程安全，依靠CAS保证）增加读状态，成功获取读锁。读锁的每次释放（线程安全的，可能有多个读线程同时释放读锁）均减少读状态，减少的值是“1<<16”。所以读写锁才能实现读读的过程共享，而读写、写读、写写的过程互斥。
+
+### 8. 锁的总结
+
+| 锁               | 公平锁     | 非公平锁   | 重入锁 | 非重入锁 | 独享锁 | 共享锁 | 悲观锁 | 乐观锁 | 自旋锁 | 适应性自旋锁 |
+| ---------------- | ---------- | ---------- | ------ | -------- | ------ | ------ | ------ | ------ | ------ | ------------ |
+| synchronized     | ×          | √          | √      | ×        | √      | ×      | √      | ×      | ×      | ×            |
+| ReentrantLock    | 看构造函数 | 看构造函数 | √      | ×        | √      | ×      | √      | ×      | √      | √            |
+| NonReentrantLock | 看构造函数 | 看构造函数 | ×      | √        | √      | ×      | √      | ×      | √      | √            |
+| ReadLock         | 看构造函数 | 看构造函数 | √      | ×        | ×      | √      | ×      | √      | √      | √            |
+| WriteLock        | 看构造函数 | 看构造函数 | √      | ×        | √      | ×      | √      | ×      | √      | √            |
+
+参考文档：[不可不说的Java“锁”事--来自美团](https://tech.meituan.com/2018/11/15/java-lock.html)
+
