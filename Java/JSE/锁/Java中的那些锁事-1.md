@@ -240,4 +240,440 @@ Monitor是线程私有的数据结构，每一个线程都有一个可用monitor
 
 ![图解](https://raw.githubusercontent.com/mxsm/document/master/image/JSE/%E9%9D%9E%E5%85%AC%E5%B9%B3%E9%94%81%E7%9A%84%E5%9B%BE%E8%A7%A3.png)
 
-https://tech.meituan.com/2018/11/15/java-lock.html
+公平锁和非公平锁在Java中的实现，以**`ReentrantLock`**(重入锁)为例子：
+
+```java
+package java.util.concurrent.locks;
+import java.util.concurrent.TimeUnit;
+import java.util.Collection;
+
+public class ReentrantLock implements Lock, java.io.Serializable {
+    private static final long serialVersionUID = 7373984872572414699L;
+    /** Synchronizer providing all implementation mechanics */
+    private final Sync sync;
+
+    /**
+     * Base of synchronization control for this lock. Subclassed
+     * into fair and nonfair versions below. Uses AQS state to
+     * represent the number of holds on the lock.
+     */
+    abstract static class Sync extends AbstractQueuedSynchronizer {
+        private static final long serialVersionUID = -5179523762034025860L;
+
+        /**
+         * Performs {@link Lock#lock}. The main reason for subclassing
+         * is to allow fast path for nonfair version.
+         */
+        abstract void lock();
+
+        /**
+         * Performs non-fair tryLock.  tryAcquire is implemented in
+         * subclasses, but both need nonfair try for trylock method.
+         */
+        final boolean nonfairTryAcquire(int acquires) {
+            final Thread current = Thread.currentThread();
+            int c = getState();
+            if (c == 0) {
+                if (compareAndSetState(0, acquires)) {
+                    setExclusiveOwnerThread(current);
+                    return true;
+                }
+            }
+            else if (current == getExclusiveOwnerThread()) {
+                int nextc = c + acquires;
+                if (nextc < 0) // overflow
+                    throw new Error("Maximum lock count exceeded");
+                setState(nextc);
+                return true;
+            }
+            return false;
+        }
+
+        protected final boolean tryRelease(int releases) {
+            int c = getState() - releases;
+            if (Thread.currentThread() != getExclusiveOwnerThread())
+                throw new IllegalMonitorStateException();
+            boolean free = false;
+            if (c == 0) {
+                free = true;
+                setExclusiveOwnerThread(null);
+            }
+            setState(c);
+            return free;
+        }
+
+        protected final boolean isHeldExclusively() {
+            // While we must in general read state before owner,
+            // we don't need to do so to check if current thread is owner
+            return getExclusiveOwnerThread() == Thread.currentThread();
+        }
+
+        final ConditionObject newCondition() {
+            return new ConditionObject();
+        }
+
+        // Methods relayed from outer class
+
+        final Thread getOwner() {
+            return getState() == 0 ? null : getExclusiveOwnerThread();
+        }
+
+        final int getHoldCount() {
+            return isHeldExclusively() ? getState() : 0;
+        }
+
+        final boolean isLocked() {
+            return getState() != 0;
+        }
+
+        /**
+         * Reconstitutes the instance from a stream (that is, deserializes it).
+         */
+        private void readObject(java.io.ObjectInputStream s)
+            throws java.io.IOException, ClassNotFoundException {
+            s.defaultReadObject();
+            setState(0); // reset to unlocked state
+        }
+    }
+
+    /**
+     * Sync object for non-fair locks
+     */
+    static final class NonfairSync extends Sync {
+        private static final long serialVersionUID = 7316153563782823691L;
+
+        /**
+         * Performs lock.  Try immediate barge, backing up to normal
+         * acquire on failure.
+         */
+        final void lock() {
+            if (compareAndSetState(0, 1))
+                setExclusiveOwnerThread(Thread.currentThread());
+            else
+                acquire(1);
+        }
+
+        protected final boolean tryAcquire(int acquires) {
+            return nonfairTryAcquire(acquires);
+        }
+    }
+
+    /**
+     * Sync object for fair locks
+     */
+    static final class FairSync extends Sync {
+        private static final long serialVersionUID = -3000897897090466540L;
+
+        final void lock() {
+            acquire(1);
+        }
+
+        /**
+         * Fair version of tryAcquire.  Don't grant access unless
+         * recursive call or no waiters or is first.
+         */
+        protected final boolean tryAcquire(int acquires) {
+            final Thread current = Thread.currentThread();
+            int c = getState();
+            if (c == 0) {
+                //公平锁多了一个hasQueuedPredecessors判断
+                if (!hasQueuedPredecessors() &&
+                    compareAndSetState(0, acquires)) {
+                    setExclusiveOwnerThread(current);
+                    return true;
+                }
+            }
+            else if (current == getExclusiveOwnerThread()) {
+                int nextc = c + acquires;
+                if (nextc < 0)
+                    throw new Error("Maximum lock count exceeded");
+                setState(nextc);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    //默认创建的是非公平锁
+    public ReentrantLock() {
+        sync = new NonfairSync();
+    }
+
+    //true公平锁，false非公平锁
+    public ReentrantLock(boolean fair) {
+        sync = fair ? new FairSync() : new NonfairSync();
+    }
+
+
+    public void lock() {
+        sync.lock();
+    }
+
+    public void lockInterruptibly() throws InterruptedException {
+        sync.acquireInterruptibly(1);
+    }
+
+    //尝试获取锁
+    public boolean tryLock() {
+        return sync.nonfairTryAcquire(1);
+    }
+	
+    //尝试获取锁
+    public boolean tryLock(long timeout, TimeUnit unit)
+            throws InterruptedException {
+        return sync.tryAcquireNanos(1, unit.toNanos(timeout));
+    }
+
+    //释放锁
+    public void unlock() {
+        sync.release(1);
+    }
+	
+    //判断是否为公平锁--公平锁和非公平锁两种实现
+    public final boolean isFair() {
+        return sync instanceof FairSync;
+    }
+
+}
+
+```
+
+```java
+//判断当前线程是否为队列的的第一个    
+public final boolean hasQueuedPredecessors() {
+        // The correctness of this depends on head being initialized
+        // before tail and on head.next being accurate if the current
+        // thread is first in queue.
+        Node t = tail; // Read fields in reverse initialization order
+        Node h = head;
+        Node s;
+        return h != t &&
+            ((s = h.next) == null || s.thread != Thread.currentThread());
+    }
+```
+
+从上面的实现来看，公平锁就是通过同步队列来实现多个线程按照申请锁的顺序来获取锁，从而实现公平的特性。非公平锁加锁时不考虑排队等待问题，直接尝试获取锁，所以存在后申请却先获得锁的情况。符合公平锁和非公平锁的特点。
+
+### 6. 可重入锁 VS 非可重入锁
+
+- **可重入锁**：又名递归锁，是指在同一个线程在外层方法获取锁的时候，在进入该线程内层方法会自动获取锁（前提锁对象得是同一个对象或者class）。不会因为之前或去过还没释放而阻塞。Java中**`ReentrantLock`**和**`synchronized`**都是可重入锁。
+
+  - 优点：一定程度避免死锁。
+
+  ```java
+  public class A {
+      public synchronized void a() {
+          System.out.println("a...");
+          b();
+      }
+  
+      public synchronized void b() {
+          System.out.println("b...");
+      }
+  }
+  ```
+
+  两个方法都是被内置锁synchronized修饰，a方法中调用了b方法。因为内置锁可以重入。所以线程在调用b方法的时候可以直接获取对象的锁，进入b方法进行操作，如果非重入锁，由于a和b锁是同一个对象。那么当前线程调用b之前要将执行a时获取当前的对象的锁释放掉，然而在没有运行完a方法，当前线程释放不了当前对象锁。所以出现死锁的现象。通俗的说：**把a和b方法当做两个房间，重入锁好比，进入a放假的钥匙同样能够进入b房间然后完成一一锁好退出来。非重入锁：先进入了a房间，但是要走出a房间释放a房间需要进入b房间。但是b房间的钥匙被a房间用了不能重复使用。这样导致了死锁，导致出不去a房间也进不去b房间**。
+
+- **非可重入锁**：锁对象被占用后在没有释放之前不允许其他的线程获取同一个锁。Java中的**`NonReentrantLock`**就是非可重入锁的实现
+
+重入锁图解：
+
+![重入锁图解](https://github.com/mxsm/document/blob/master/image/JSE/%E9%87%8D%E5%85%A5%E9%94%81%E5%9B%BE%E8%A7%A3.png?raw=true)
+
+非重入锁图解：
+
+![图解](https://github.com/mxsm/document/blob/master/image/JSE/%E9%9D%9E%E9%87%8D%E5%85%A5%E9%94%81%E5%9B%BE%E8%A7%A3.png?raw=true)
+
+以**`NonReentrantLock`**和**`ReentrantLock`**的代码来看一下实现的区别(JDK8)
+
+首先是非重入锁（**`NonReentrantLock`**）：
+
+```java
+	//锁的获取   
+@Override
+    protected boolean tryAcquire(int acquires) {
+        //直接通过compareAndSetState来获取锁
+        if (compareAndSetState(0, 1)) {
+            //设置当前锁的拥有者为当前的获取锁线程
+            owner = Thread.currentThread();
+            return true;//获取成功返回true
+        }
+        return false;//获取失败返回false
+    }
+//锁的释放
+  @Override
+    protected boolean tryRelease(int releases) {
+        //判断释放锁的线程是否为拥有锁的线程
+        if (Thread.currentThread() != owner) {
+            throw new IllegalMonitorStateException();
+        }
+        owner = null;
+        //直接修改为0
+        setState(0);
+        return true;
+    }
+```
+
+对比看一下重入锁（**`ReentrantLock`**）：
+
+```java
+//尝试获取锁--非公平锁
+final boolean nonfairTryAcquire(int acquires) {
+            final Thread current = Thread.currentThread();
+            int c = getState();
+    		//没有线程占有锁
+            if (c == 0) {
+                if (compareAndSetState(0, acquires)) {
+                    setExclusiveOwnerThread(current);
+                    return true;
+                }
+            }
+    		//判断获取锁的线程和之前获取锁的线程是否为同一个
+            else if (current == getExclusiveOwnerThread()) {
+                //如果是state+acquires(该数值为1)
+                int nextc = c + acquires;
+                if (nextc < 0) // overflow
+                    throw new Error("Maximum lock count exceeded");
+                setState(nextc);
+                return true;
+            }
+            return false;
+        }
+	   //重入锁的释放
+        protected final boolean tryRelease(int releases) {
+            //释放的占有锁的线程数
+            int c = getState() - releases;
+            //对线程进行判断
+            if (Thread.currentThread() != getExclusiveOwnerThread())
+                throw new IllegalMonitorStateException();
+            //默认是释放失败的
+            boolean free = false;
+            //如果为0释放完
+            if (c == 0) {
+                free = true;
+                //独有的锁的拥有线程设置为null
+                setExclusiveOwnerThread(null);
+            }
+            //设置status的值
+            setState(c);
+            return free;
+        }
+```
+
+从上面的代码分析通过对status值的控制来实现重入锁和非重入锁。而**`synchronized`**是虚拟机底层实现。水平有限没办法分析。
+
+### 7 独享锁 VS 共享锁
+
+- **独享锁**：也叫做排他锁，是指该锁只能被一个线程所持有。线程T对数据A加上排他锁后，其他线程不能对A加任何类型的锁。获得排它锁的线程即能读数据又能修改数据。JDK中的**synchronized**和JUC(**`java.util.concurrent`**)中Lock的实现类就是互斥锁—([锁的相关文章](http://www.iocoder.cn/JUC/good-collection/))。**`ReentrantReadWriteLock.WriteLock`**
+- **共享锁**：该锁可以被多个线程持有，如果线程T对数据A加上共享锁后，则其他线程只能对A再加共享锁，不能加排它锁。获得**共享锁的线程只能读数据，不能修改数据**。**`ReentrantReadWriteLock.ReadLock`**
+
+独享锁和共享锁都是通过AbstractQueuedSynchronizer(简称AQS)，队列同步器来实现的。
+
+```java
+public class ReentrantReadWriteLock
+        implements ReadWriteLock, java.io.Serializable {
+    private static final long serialVersionUID = -6992448646407690164L;
+    /** 内部类提供的读锁 */
+    private final ReentrantReadWriteLock.ReadLock readerLock;
+    /** 内部类提供的写锁 */
+    private final ReentrantReadWriteLock.WriteLock writerLock;
+    /** Performs all synchronization mechanics */
+    final Sync sync;
+
+    /**
+     * 读写说默认创建的是非公平锁
+     * 
+     */
+    public ReentrantReadWriteLock() {
+        this(false);
+    }
+
+    public ReentrantReadWriteLock(boolean fair) {
+        sync = fair ? new FairSync() : new NonfairSync();
+        readerLock = new ReadLock(this);
+        writerLock = new WriteLock(this);
+    }
+    
+    //......
+}
+```
+
+Sync代码
+
+```java
+ 		static final int SHARED_SHIFT   = 16;
+        static final int SHARED_UNIT    = (1 << SHARED_SHIFT);
+		//读锁和写锁的最大值
+        static final int MAX_COUNT      = (1 << SHARED_SHIFT) - 1;
+		//独占锁写的标志位int的第16位
+        static final int EXCLUSIVE_MASK = (1 << SHARED_SHIFT) - 1;
+
+        /** Returns the number of shared holds represented in count  */
+        static int sharedCount(int c)    { return c >>> SHARED_SHIFT; }
+        /***/
+        static int exclusiveCount(int c) { return c & EXCLUSIVE_MASK; }
+```
+
+**`ReentrantReadWriteLock.WriteLock（重入锁）`**的加锁代码
+
+```java
+//加锁
+public void lock() {
+            sync.acquire(1);
+        }
+//方法acquire
+public final void acquire(int arg) {
+        if (!tryAcquire(arg) &&
+            acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+            selfInterrupt();
+    }
+
+protected final boolean tryAcquire(int acquires) {
+            //获取当前的获取锁的线程
+            Thread current = Thread.currentThread();
+    		//获取当前锁的个数
+            int c = getState();
+    		//获取写锁的数量--低16位
+            int w = exclusiveCount(c);
+    		//不等于0--已经有线程持有了锁
+            if (c != 0) {
+                 //写锁为0总的锁不为0说明存在读锁，或者当前线程不是持有锁的线程返回false
+                if (w == 0 || current != getExclusiveOwnerThread())
+                    return false;
+                //现有的写锁加上当前的锁大于最大值MAX_COUNT 抛错
+                if (w + exclusiveCount(acquires) > MAX_COUNT 抛错)
+                    throw new Error("Maximum lock count exceeded");
+                // Reentrant acquire
+				//设置锁的数量
+                setState(c + acquires);
+                return true;
+            }
+    		//对于非公平锁writerShouldBlock在JDK8中总是返回false
+            if (writerShouldBlock() ||
+                !compareAndSetState(c, c + acquires))
+                return false;
+            setExclusiveOwnerThread(current);
+            return true;
+        }
+```
+
+从上面的代码梳理一下**`WriteLock`**加锁的过程：
+
+1. 调用**`ReentrantReadWriteLock.WriteLock`**对象的**`lock`**方法。
+2. **`lock`**方法调用**`sync.acquire(1)`**，获取的值为1。
+3. **`tryAcquire`**尝试获取锁，如果获取成功就不用执行下一个判断**`acquireQueued`**
+
+**`tryAcquire`**的获取加锁过程：
+
+1. 获取当前线程**`current`**(这个只的是获取锁对象的线程)
+2. 获取锁的个数**`c`**(读锁和写锁)
+3. 获取写锁的个数**`w`**（int的低16位）
+4. 判断锁的数量**`c`**不等于0
+   - 不等于0
+     - 写锁**`w`**等于0或者获取锁的线程不等于锁的拥有者线程，返回**`false`**
+     - 写锁**`w`**+请求的锁 > 写锁的最大值MAX_COUNT，直接抛错
+     - 设置设置锁的数量然后返回true获取锁成功
+5. 对于非公平锁**`writerShouldBlock()`**一直返回的是false,所以看后面的**`compareAndSetState`**的设置如果失败返回**`false`**获取写锁失败
+6. **`compareAndSetState`**设置成功，设置当前说的拥有者为现在获取线程的对象。
+
