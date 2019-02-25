@@ -56,7 +56,7 @@ CAS算法涉及到三个操作数：
 
 当且仅当 V 的值等于 A 时，CAS通过原子方式用新值B来更新V的值（“比较+更新”整体是一个原子操作），否则不会执行任何操作。一般情况下，“更新”是一个不断重试的操作。
 
-之前提到java.util.concurrent包中的原子类，就是通过CAS来实现了乐观锁，那么我们进入原子类**`AtomicInteger`** 的源码，看一下  **`AtomicInteger`** 的定义(JDK11的代码)：
+之前提到java.util.concurrent包中的原子类，就是通过CAS来实现了乐观锁，那么我们进入原子类 **`AtomicInteger`** 的源码，看一下  **`AtomicInteger`** 的定义(JDK11的代码)：
 
 ```java
 
@@ -114,7 +114,7 @@ CAS算法的三个问题：
 
 而为了让当前线程“稍等一下”，我们需让当前线程进行自旋，如果在自旋完成后前面锁定同步资源的线程已经释放了锁，那么当前线程就可以不必阻塞而是直接获取同步资源，从而避免切换线程的开销。这就是自旋锁。
 
-自旋锁体现在代码上面就是通过循环来实现，例如**`AtomicInteger`** 的**`getAndIncrement`** 方法就是通过循环不断的来尝试。
+自旋锁体现在代码上面就是通过循环来实现，例如 **`AtomicInteger`** 的 **`getAndIncrement`** 方法就是通过循环不断的来尝试。
 
 ![图解](https://raw.githubusercontent.com/mxsm/document/master/image/JSE/%E8%87%AA%E6%97%8B%E9%94%81%E5%9B%BE%E8%A7%A3.png)
 
@@ -240,7 +240,7 @@ Monitor是线程私有的数据结构，每一个线程都有一个可用monitor
 
 ![图解](https://raw.githubusercontent.com/mxsm/document/master/image/JSE/%E9%9D%9E%E5%85%AC%E5%B9%B3%E9%94%81%E7%9A%84%E5%9B%BE%E8%A7%A3.png)
 
-公平锁和非公平锁在Java中的实现，以**`ReentrantLock`**(重入锁)为例子：
+公平锁和非公平锁在Java中的实现，以 **`ReentrantLock`** (重入锁)为例子：
 
 ```java
 package java.util.concurrent.locks;
@@ -456,7 +456,7 @@ public final boolean hasQueuedPredecessors() {
 
 ### 6. 可重入锁 VS 非可重入锁
 
-- **可重入锁**：又名递归锁，是指在同一个线程在外层方法获取锁的时候，在进入该线程内层方法会自动获取锁（前提锁对象得是同一个对象或者class）。不会因为之前或去过还没释放而阻塞。Java中**`ReentrantLock`**和**`synchronized`**都是可重入锁。
+- **可重入锁**：又名递归锁，是指在同一个线程在外层方法获取锁的时候，在进入该线程内层方法会自动获取锁（前提锁对象得是同一个对象或者class）。不会因为之前或去过还没释放而阻塞。Java中 **`ReentrantLock`** 和 **`synchronized`** 都是可重入锁。
 
   - 优点：一定程度避免死锁。
 
@@ -485,9 +485,9 @@ public final boolean hasQueuedPredecessors() {
 
 ![图解](https://github.com/mxsm/document/blob/master/image/JSE/%E9%9D%9E%E9%87%8D%E5%85%A5%E9%94%81%E5%9B%BE%E8%A7%A3.png?raw=true)
 
-以**`NonReentrantLock`** 和**`ReentrantLock`** 的代码来看一下实现的区别(JDK8)
+以 **`NonReentrantLock`** 和 **`ReentrantLock`** 的代码来看一下实现的区别(JDK8)
 
-首先是非重入锁（**`NonReentrantLock`**）：
+首先是非重入锁（ **`NonReentrantLock`** ）：
 
 ```java
 	//锁的获取   
@@ -515,7 +515,7 @@ public final boolean hasQueuedPredecessors() {
     }
 ```
 
-对比看一下重入锁（**`ReentrantLock`** ）：
+对比看一下重入锁（ **`ReentrantLock`** ）：
 
 ```java
 //尝试获取锁--非公平锁
@@ -561,12 +561,12 @@ final boolean nonfairTryAcquire(int acquires) {
         }
 ```
 
-从上面的代码分析通过对status值的控制来实现重入锁和非重入锁。而**`synchronized`**是虚拟机底层实现。水平有限没办法分析。
+从上面的代码分析通过对status值的控制来实现重入锁和非重入锁。而 **`synchronized`** 是虚拟机底层实现。水平有限没办法分析。
 
 ### 7 独享锁 VS 共享锁
 
-- **独享锁**：也叫做排他锁，是指该锁只能被一个线程所持有。线程T对数据A加上排他锁后，其他线程不能对A加任何类型的锁。获得排它锁的线程即能读数据又能修改数据。JDK中的 **synchronized** 和JUC( **`java.util.concurrent`** )中Lock的实现类就是互斥锁—([锁的相关文章](http://www.iocoder.cn/JUC/good-collection/))。**`ReentrantReadWriteLock.WriteLock`**
-- **共享锁**：该锁可以被多个线程持有，如果线程T对数据A加上共享锁后，则其他线程只能对A再加共享锁，不能加排它锁。获得**共享锁的线程只能读数据，不能修改数据**。**`ReentrantReadWriteLock.ReadLock`**
+- **独享锁**：也叫做排他锁，是指该锁只能被一个线程所持有。线程T对数据A加上排他锁后，其他线程不能对A加任何类型的锁。获得排它锁的线程即能读数据又能修改数据。JDK中的 **synchronized** 和JUC( **`java.util.concurrent`** )中Lock的实现类就是互斥锁—([锁的相关文章](http://www.iocoder.cn/JUC/good-collection/))。 **`ReentrantReadWriteLock.WriteLock`**
+- **共享锁**：该锁可以被多个线程持有，如果线程T对数据A加上共享锁后，则其他线程只能对A再加共享锁，不能加排它锁。获得**共享锁的线程只能读数据，不能修改数据**。 **`ReentrantReadWriteLock.ReadLock`**
 
 独享锁和共享锁都是通过AbstractQueuedSynchronizer(简称AQS)，队列同步器来实现的。
 
@@ -662,19 +662,19 @@ protected final boolean tryAcquire(int acquires) {
 
 1. 调用 **`ReentrantReadWriteLock.WriteLock`** 对象的 **`lock`** 方法。
 2. **`lock`** 方法调用 **`sync.acquire(1)`** ，获取的值为1。
-3. **`tryAcquire`**尝试获取锁，如果获取成功就不用执行下一个判断**`acquireQueued`**
+3. **`tryAcquire`**尝试获取锁，如果获取成功就不用执行下一个判断 **`acquireQueued`**
 
 **`tryAcquire`** 的获取加锁过程：
 
-1. 获取当前线程**`current`**(这个只的是获取锁对象的线程)
-2. 获取锁的个数**`c`**(读锁和写锁)
-3. 获取写锁的个数**`w`**（int的低16位）
-4. 判断锁的数量**`c`**不等于0
+1. 获取当前线程 **`current`** (这个只的是获取锁对象的线程)
+2. 获取锁的个数 **`c`**(读锁和写锁)
+3. 获取写锁的个数 **`w`**（int的低16位）
+4. 判断锁的数量 **`c`**不等于0
    - 不等于0
      - 写锁**`w`**等于0或者获取锁的线程不等于锁的拥有者线程，返回**`false`**
      - 写锁**`w`**+请求的锁 > 写锁的最大值MAX_COUNT，直接抛错
      - 设置设置锁的数量然后返回true获取锁成功
-5. 对于非公平锁**`writerShouldBlock()`** 一直返回的是false,所以看后面的**`compareAndSetState`** 的设置如果失败返回**`false`** 获取写锁失败
+5. 对于非公平锁 **`writerShouldBlock()`** 一直返回的是false,所以看后面的 **`compareAndSetState`** 的设置如果失败返回 **`false`** 获取写锁失败
 6. **`compareAndSetState`** 设置成功，设置当前说的拥有者为现在获取线程的对象。
 
 ------
