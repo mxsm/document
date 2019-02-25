@@ -46,7 +46,7 @@ private AtomicInteger atomicInteger = new AtomicInteger();
 atomicInteger.incrementAndGet(); //执行自增1
 ```
 
-**`AtomicInteger`**是**`java.util.concurrent`**包中的原子类，就是通过CAS来实现乐观锁。CAS全称 Compare And Swap（比较与交换），是一种无锁算法。在不使用锁（没有线程被阻塞）的情况下实现多线程之间的变量同步。**`java.util.concurrent`**包中的原子类就是通过CAS来实现了乐观锁。
+**`AtomicInteger`** 是 **`java.util.concurrent`** 包中的原子类，就是通过CAS来实现乐观锁。CAS全称 Compare And Swap（比较与交换），是一种无锁算法。在不使用锁（没有线程被阻塞）的情况下实现多线程之间的变量同步。**`java.util.concurrent`** 包中的原子类就是通过CAS来实现了乐观锁。
 
 CAS算法涉及到三个操作数：
 
@@ -56,7 +56,7 @@ CAS算法涉及到三个操作数：
 
 当且仅当 V 的值等于 A 时，CAS通过原子方式用新值B来更新V的值（“比较+更新”整体是一个原子操作），否则不会执行任何操作。一般情况下，“更新”是一个不断重试的操作。
 
-之前提到java.util.concurrent包中的原子类，就是通过CAS来实现了乐观锁，那么我们进入原子类**`AtomicInteger`**的源码，看一下**`AtomicInteger`**的定义(JDK11的代码)：
+之前提到java.util.concurrent包中的原子类，就是通过CAS来实现了乐观锁，那么我们进入原子类**`AtomicInteger`** 的源码，看一下  **`AtomicInteger`** 的定义(JDK11的代码)：
 
 ```java
 
@@ -102,8 +102,8 @@ CAS算法涉及到三个操作数：
 
 CAS算法的三个问题：
 
-- **ABA问题**。CAS需要在操作值的时候检查内存值是否发生变化，没有发生变化才会更新内存值。但是如果内存值原来是A，后来变成了B，然后又变成了A，那么CAS进行检查时会发现值没有发生变化，但是实际上是有变化的。ABA问题的解决思路就是在变量前面添加版本号，每次变量更新的时候都把版本号加一，这样变化过程就从“A－B－A”变成了“1A－2B－3A”。
-- **循环时间长开销大**。CAS操作如果长时间不成功，会导致其一直自旋，给CPU带来非常大的开销。
+- **ABA问题** 。CAS需要在操作值的时候检查内存值是否发生变化，没有发生变化才会更新内存值。但是如果内存值原来是A，后来变成了B，然后又变成了A，那么CAS进行检查时会发现值没有发生变化，但是实际上是有变化的。ABA问题的解决思路就是在变量前面添加版本号，每次变量更新的时候都把版本号加一，这样变化过程就从“A－B－A”变成了“1A－2B－3A”。
+- **循环时间长开销大** 。CAS操作如果长时间不成功，会导致其一直自旋，给CPU带来非常大的开销。
 - **只能保证一个共享变量的原子操作**。对一个共享变量执行操作时，CAS能够保证原子操作，但是对多个共享变量操作时，CAS是无法保证操作的原子性的。
 
 ### 3. 自旋锁 VS 适应性自旋锁
@@ -114,11 +114,11 @@ CAS算法的三个问题：
 
 而为了让当前线程“稍等一下”，我们需让当前线程进行自旋，如果在自旋完成后前面锁定同步资源的线程已经释放了锁，那么当前线程就可以不必阻塞而是直接获取同步资源，从而避免切换线程的开销。这就是自旋锁。
 
-自旋锁体现在代码上面就是通过循环来实现，例如**`AtomicInteger`**的**`getAndIncrement`**方法就是通过循环不断的来尝试。
+自旋锁体现在代码上面就是通过循环来实现，例如**`AtomicInteger`** 的**`getAndIncrement`** 方法就是通过循环不断的来尝试。
 
 ![图解](https://raw.githubusercontent.com/mxsm/document/master/image/JSE/%E8%87%AA%E6%97%8B%E9%94%81%E5%9B%BE%E8%A7%A3.png)
 
-自旋锁本身是有缺点的，它不能代替阻塞。自旋等待虽然避免了线程切换的开销，但它要占用处理器时间。如果锁被占用的时间很短，自旋等待的效果就会非常好。反之，如果锁被占用的时间很长，那么自旋的线程只会白浪费处理器资源。所以，自旋等待的时间必须要有一定的限度，如果自旋超过了限定次数（默认是10次，可以使用         **`-XX:PreBlockSpin`**来更改）没有成功获得锁，就应当挂起线程。
+自旋锁本身是有缺点的，它不能代替阻塞。自旋等待虽然避免了线程切换的开销，但它要占用处理器时间。如果锁被占用的时间很短，自旋等待的效果就会非常好。反之，如果锁被占用的时间很长，那么自旋的线程只会白浪费处理器资源。所以，自旋等待的时间必须要有一定的限度，如果自旋超过了限定次数（默认是10次，可以使用         **`-XX:PreBlockSpin`** 来更改）没有成功获得锁，就应当挂起线程。
 
 自旋锁的实现原理同样也是CAS，AtomicInteger中调用unsafe进行自增操作的源码中的do-while循环就是一个自旋操作，如果修改数值失败则通过循环来执行自旋，直至修改成功。
 
@@ -224,7 +224,7 @@ Monitor是线程私有的数据结构，每一个线程都有一个可用monitor
 - **公平锁**：指多个线程按照申请锁的顺序来获取锁，线程直接进入队列中排队，队列中的第一个线程才能获得锁。公平锁的优点是等待锁的线程不会饿死。
   - **优点**：等待锁的线程不会饿死
   - **缺点**：整体吞吐效率相对非公平锁要低，等待队列中除第一个线程以外的所有线程都会阻塞，CPU唤醒阻塞线程的开销比非公平锁大。
-- **非公平锁**：多个线程加锁时**直接尝试获取锁**，获取不到才会到等待队列的队尾等待。但如果此时锁刚好可用，那么这个线程可以无需阻塞直接获取到锁，所以非公平锁**有可能出现后申请锁的线程先获取锁的场景**。
+- **非公平锁**：多个线程加锁时**直接尝试获取锁** ，获取不到才会到等待队列的队尾等待。但如果此时锁刚好可用，那么这个线程可以无需阻塞直接获取到锁，所以非公平锁 **有可能出现后申请锁的线程先获取锁的场景** 。
   - **优点**：可以减少唤起线程的开销，整体的吞吐效率高，因为线程有几率不阻塞直接获得锁，CPU不必唤醒所有线程。
   - **缺点**：处于等待队列中的线程可能会饿死，或者等很久才会获得锁。
 
@@ -475,7 +475,7 @@ public final boolean hasQueuedPredecessors() {
 
   两个方法都是被内置锁synchronized修饰，a方法中调用了b方法。因为内置锁可以重入。所以线程在调用b方法的时候可以直接获取对象的锁，进入b方法进行操作，如果非重入锁，由于a和b锁是同一个对象。那么当前线程调用b之前要将执行a时获取当前的对象的锁释放掉，然而在没有运行完a方法，当前线程释放不了当前对象锁。所以出现死锁的现象。通俗的说：**把a和b方法当做两个房间，重入锁好比，进入a放假的钥匙同样能够进入b房间然后完成一一锁好退出来。非重入锁：先进入了a房间，但是要走出a房间释放a房间需要进入b房间。但是b房间的钥匙被a房间用了不能重复使用。这样导致了死锁，导致出不去a房间也进不去b房间**。
 
-- **非可重入锁**：锁对象被占用后在没有释放之前不允许其他的线程获取同一个锁。Java中的**`NonReentrantLock`**就是非可重入锁的实现
+- **非可重入锁**：锁对象被占用后在没有释放之前不允许其他的线程获取同一个锁。Java中的 **`NonReentrantLock`** 就是非可重入锁的实现
 
 重入锁图解：
 
@@ -485,7 +485,7 @@ public final boolean hasQueuedPredecessors() {
 
 ![图解](https://github.com/mxsm/document/blob/master/image/JSE/%E9%9D%9E%E9%87%8D%E5%85%A5%E9%94%81%E5%9B%BE%E8%A7%A3.png?raw=true)
 
-以**`NonReentrantLock`**和**`ReentrantLock`**的代码来看一下实现的区别(JDK8)
+以**`NonReentrantLock`** 和**`ReentrantLock`** 的代码来看一下实现的区别(JDK8)
 
 首先是非重入锁（**`NonReentrantLock`**）：
 
@@ -515,7 +515,7 @@ public final boolean hasQueuedPredecessors() {
     }
 ```
 
-对比看一下重入锁（**`ReentrantLock`**）：
+对比看一下重入锁（**`ReentrantLock`** ）：
 
 ```java
 //尝试获取锁--非公平锁
@@ -565,7 +565,7 @@ final boolean nonfairTryAcquire(int acquires) {
 
 ### 7 独享锁 VS 共享锁
 
-- **独享锁**：也叫做排他锁，是指该锁只能被一个线程所持有。线程T对数据A加上排他锁后，其他线程不能对A加任何类型的锁。获得排它锁的线程即能读数据又能修改数据。JDK中的**synchronized**和JUC(**`java.util.concurrent`**)中Lock的实现类就是互斥锁—([锁的相关文章](http://www.iocoder.cn/JUC/good-collection/))。**`ReentrantReadWriteLock.WriteLock`**
+- **独享锁**：也叫做排他锁，是指该锁只能被一个线程所持有。线程T对数据A加上排他锁后，其他线程不能对A加任何类型的锁。获得排它锁的线程即能读数据又能修改数据。JDK中的 **synchronized** 和JUC( **`java.util.concurrent`** )中Lock的实现类就是互斥锁—([锁的相关文章](http://www.iocoder.cn/JUC/good-collection/))。**`ReentrantReadWriteLock.WriteLock`**
 - **共享锁**：该锁可以被多个线程持有，如果线程T对数据A加上共享锁后，则其他线程只能对A再加共享锁，不能加排它锁。获得**共享锁的线程只能读数据，不能修改数据**。**`ReentrantReadWriteLock.ReadLock`**
 
 独享锁和共享锁都是通过AbstractQueuedSynchronizer(简称AQS)，队列同步器来实现的。
@@ -615,7 +615,7 @@ Sync代码
         static int exclusiveCount(int c) { return c & EXCLUSIVE_MASK; }
 ```
 
-**`ReentrantReadWriteLock.WriteLock（重入锁）`**的加锁代码
+**`ReentrantReadWriteLock.WriteLock（重入锁）`** 的加锁代码
 
 ```java
 //加锁
@@ -658,13 +658,13 @@ protected final boolean tryAcquire(int acquires) {
         }
 ```
 
-从上面的代码梳理一下**`WriteLock`**加锁的过程：
+从上面的代码梳理一下 **`WriteLock`** 加锁的过程：
 
-1. 调用**`ReentrantReadWriteLock.WriteLock`**对象的**`lock`**方法。
-2. **`lock`**方法调用**`sync.acquire(1)`**，获取的值为1。
+1. 调用 **`ReentrantReadWriteLock.WriteLock`** 对象的 **`lock`** 方法。
+2. **`lock`** 方法调用 **`sync.acquire(1)`** ，获取的值为1。
 3. **`tryAcquire`**尝试获取锁，如果获取成功就不用执行下一个判断**`acquireQueued`**
 
-**`tryAcquire`**的获取加锁过程：
+**`tryAcquire`** 的获取加锁过程：
 
 1. 获取当前线程**`current`**(这个只的是获取锁对象的线程)
 2. 获取锁的个数**`c`**(读锁和写锁)
@@ -674,12 +674,12 @@ protected final boolean tryAcquire(int acquires) {
      - 写锁**`w`**等于0或者获取锁的线程不等于锁的拥有者线程，返回**`false`**
      - 写锁**`w`**+请求的锁 > 写锁的最大值MAX_COUNT，直接抛错
      - 设置设置锁的数量然后返回true获取锁成功
-5. 对于非公平锁**`writerShouldBlock()`**一直返回的是false,所以看后面的**`compareAndSetState`**的设置如果失败返回**`false`**获取写锁失败
-6. **`compareAndSetState`**设置成功，设置当前说的拥有者为现在获取线程的对象。
+5. 对于非公平锁**`writerShouldBlock()`** 一直返回的是false,所以看后面的**`compareAndSetState`** 的设置如果失败返回**`false`** 获取写锁失败
+6. **`compareAndSetState`** 设置成功，设置当前说的拥有者为现在获取线程的对象。
 
 ------
 
-**`ReentrantReadWriteLock.ReadLock`**的加锁代码
+**`ReentrantReadWriteLock.ReadLock`** 的加锁代码
 
 ```java
         @ReservedStackAccess
