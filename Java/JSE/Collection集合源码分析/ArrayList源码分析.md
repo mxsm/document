@@ -144,3 +144,7 @@ private void grow(int minCapacity) {
 
 ArrayList不是同步的，所以在不需要保证线程安全的时候使用ArrayList
 
+### 使用注意
+
+- 如果知道 **`ArrayList`** 的长度直接设置 **`initialCapacity`** 初始容量。这样的好处在于避免了扩容带来的性能问题。减少了添加过程中扩容的步骤，如果数量小于10就直接用默认的，因为 **`ArrayList`** 的最小容量为10。
+
