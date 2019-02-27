@@ -350,3 +350,33 @@ ThreadB 出去时间 1551165188571
 ```
 
 从上面可以看出虽然是两个不同的对象，但是获取的对象锁，所以 **`ThreadA`** 和 **`ThreadB`** 存在竞争的关系。实现了线程同步的情况。
+
+### 3 双重校验锁实现对象单例（线程安全）
+
+这个就是传说中double-check
+
+```java
+public class LazySingleton {
+
+    private volatile  static  LazySingleton lazySingleton;
+
+    private static final Object LOCK = new Object();
+
+    private LazySingleton(){
+
+    }
+
+    public static LazySingleton doubleCheckedLazySingleton(){
+
+        if(lazySingleton == null){
+            synchronized (LOCK){
+                if(lazySingleton == null){
+                    lazySingleton = new LazySingleton();
+                }
+            }
+        }
+        return lazySingleton;
+    }
+}
+```
+
