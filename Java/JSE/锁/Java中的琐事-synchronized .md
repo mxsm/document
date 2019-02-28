@@ -380,3 +380,29 @@ public class LazySingleton {
 }
 ```
 
+### 4. 总结
+
+**synchronized关键字最主要的三种使用方式：**
+
+- **修饰实例方法，对当前的对象实例加锁，进入同步代码获得当前的实例锁**。
+- **修饰静态方法，对当前类加锁，进入同步代码钱要获得当前类对象锁**。也就是给当前类加锁，也会作用于所有的对象。静态成员不属于任何对象实例。 因为静态成员不属于任何一个实例对象，是类成员（ static 表明这是该类的一个静态资源，不管new了多少个对象，只有一份，所以对该类的所有对象都加了锁）。所以如果一个线程A调用一个实例对象的非静态 synchronized 方法，而线程B需要调用这个实例对象所属类的静态 synchronized 方法，是允许的，不会发生互斥现象，**因为访问静态 synchronized 方法占用的锁是当前类的锁，而访问非静态 synchronized 方法占用的锁是当前实例对象锁**
+- **修饰代码块，指定加锁对象，对给定对象加锁，进入同步代码看前要获得给定对象的锁。这里修饰代码块加锁可以的对象可以是类也可以是对象。** 
+
+### 5. synchronized与ReenTrantLock 的同和不同
+
+**相同：**
+
+​	两者都是重入锁
+
+**不同：** 
+
+1. **synchronized 依赖于 JVM 而 ReenTrantLock 依赖于 API**	
+
+   synchronized 是依赖于 JVM 实现的，Reentrant 依赖AQS和CAS来进行的实现。
+
+2.  **ReenTrantLock 比 synchronized 多了一些功能** 
+
+   - **ReenTrantLock提供了一种能够中断等待锁的线程的机制**
+   - **ReenTrantLock可以指定是公平锁还是非公平锁，而synchronized只是非公平锁**
+   - **ReenTrantLock在通知线程比synchronized更加的灵活。**
+
