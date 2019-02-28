@@ -369,13 +369,12 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         }
 
         /**
-         * Fair version of tryAcquire.  Don't grant access unless
-         * recursive call or no waiters or is first.
+         * 公平锁tryAcquire的实现
          */
         protected final boolean tryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
-            int c = getState();
-            if (c == 0) {
+            int c = getState(); //获取资源的状态
+            if (c == 0) {// 为0表明资源没有被占用
                 //公平锁多了一个hasQueuedPredecessors判断
                 if (!hasQueuedPredecessors() &&
                     compareAndSetState(0, acquires)) {
