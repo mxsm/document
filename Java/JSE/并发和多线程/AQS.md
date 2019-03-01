@@ -310,23 +310,8 @@ public abstract class AbstractQueuedSynchronizer
             LockSupport.unpark(s.thread); // 唤醒线程
     }
 
-    /**
-     * Release action for shared mode -- signals successor and ensures
-     * propagation. (Note: For exclusive mode, release just amounts
-     * to calling unparkSuccessor of head if it needs signal.)
-     */
     private void doReleaseShared() {
-        /*
-         * Ensure that a release propagates, even if there are other
-         * in-progress acquires/releases.  This proceeds in the usual
-         * way of trying to unparkSuccessor of head if it needs
-         * signal. But if it does not, status is set to PROPAGATE to
-         * ensure that upon release, propagation continues.
-         * Additionally, we must loop in case a new node is added
-         * while we are doing this. Also, unlike other uses of
-         * unparkSuccessor, we need to know if CAS to reset status
-         * fails, if so rechecking.
-         */
+
         for (;;) {
             Node h = head;
             if (h != null && h != tail) {
@@ -356,22 +341,7 @@ public abstract class AbstractQueuedSynchronizer
     private void setHeadAndPropagate(Node node, int propagate) {
         Node h = head; // Record old head for check below
         setHead(node);
-        /*
-         * Try to signal next queued node if:
-         *   Propagation was indicated by caller,
-         *     or was recorded (as h.waitStatus either before
-         *     or after setHead) by a previous operation
-         *     (note: this uses sign-check of waitStatus because
-         *      PROPAGATE status may transition to SIGNAL.)
-         * and
-         *   The next node is waiting in shared mode,
-         *     or we don't know, because it appears null
-         *
-         * The conservatism in both of these checks may cause
-         * unnecessary wake-ups, but only when there are multiple
-         * racing acquires/releases, so most need signals now or soon
-         * anyway.
-         */
+
         if (propagate > 0 || h == null || h.waitStatus < 0 ||
             (h = head) == null || h.waitStatus < 0) {
             Node s = node.next;
@@ -399,14 +369,10 @@ public abstract class AbstractQueuedSynchronizer
         while (pred.waitStatus > 0)
             node.prev = pred = pred.prev;
 
-        // predNext is the apparent node to unsplice. CASes below will
-        // fail if not, in which case, we lost race vs another cancel
-        // or signal, so no further action is necessary.
+       
         Node predNext = pred.next;
 
-        // Can use unconditional write instead of CAS here.
-        // After this atomic step, other Nodes can skip past us.
-        // Before, we are free of interference from other threads.
+        
         node.waitStatus = Node.CANCELLED;
 
         // If we are the tail, remove ourselves.
@@ -431,15 +397,6 @@ public abstract class AbstractQueuedSynchronizer
         }
     }
 
-    /**
-     * Checks and updates status for a node that failed to acquire.
-     * Returns true if thread should block. This is the main signal
-     * control in all acquire loops.  Requires that pred == node.prev.
-     *
-     * @param pred node's predecessor holding status
-     * @param node the node
-     * @return {@code true} if thread should block
-     */
     private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
         int ws = pred.waitStatus;
         if (ws == Node.SIGNAL)
@@ -458,19 +415,13 @@ public abstract class AbstractQueuedSynchronizer
             } while (pred.waitStatus > 0);
             pred.next = node;
         } else {
-            /*
-             * waitStatus must be 0 or PROPAGATE.  Indicate that we
-             * need a signal, but don't park yet.  Caller will need to
-             * retry to make sure it cannot acquire before parking.
-             */
+
             compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
         }
         return false;
     }
 
-    /**
-     * Convenience method to interrupt current thread.
-     */
+
     static void selfInterrupt() {
         Thread.currentThread().interrupt();
     }
@@ -485,23 +436,6 @@ public abstract class AbstractQueuedSynchronizer
         return Thread.interrupted();
     }
 
-    /*
-     * Various flavors of acquire, varying in exclusive/shared and
-     * control modes.  Each is mostly the same, but annoyingly
-     * different.  Only a little bit of factoring is possible due to
-     * interactions of exception mechanics (including ensuring that we
-     * cancel if tryAcquire throws exception) and other control, at
-     * least not without hurting performance too much.
-     */
-
-    /**
-     * Acquires in exclusive uninterruptible mode for thread already in
-     * queue. Used by condition wait methods as well as acquire.
-     *
-     * @param node the node
-     * @param arg the acquire argument
-     * @return {@code true} if interrupted while waiting
-     */
     final boolean acquireQueued(final Node node, int arg) {
         boolean failed = true;
         try {
@@ -692,34 +626,6 @@ public abstract class AbstractQueuedSynchronizer
         }
     }
 
-    // Main exported methods
-
-    /**
-     * Attempts to acquire in exclusive mode. This method should query
-     * if the state of the object permits it to be acquired in the
-     * exclusive mode, and if so to acquire it.
-     *
-     * <p>This method is always invoked by the thread performing
-     * acquire.  If this method reports failure, the acquire method
-     * may queue the thread, if it is not already queued, until it is
-     * signalled by a release from some other thread. This can be used
-     * to implement method {@link Lock#tryLock()}.
-     *
-     * <p>The default
-     * implementation throws {@link UnsupportedOperationException}.
-     *
-     * @param arg the acquire argument. This value is always the one
-     *        passed to an acquire method, or is the value saved on entry
-     *        to a condition wait.  The value is otherwise uninterpreted
-     *        and can represent anything you like.
-     * @return {@code true} if successful. Upon success, this object has
-     *         been acquired.
-     * @throws IllegalMonitorStateException if acquiring would place this
-     *         synchronizer in an illegal state. This exception must be
-     *         thrown in a consistent fashion for synchronization to work
-     *         correctly.
-     * @throws UnsupportedOperationException if exclusive mode is not supported
-     */
     protected boolean tryAcquire(int arg) {
         throw new UnsupportedOperationException();
     }
@@ -731,38 +637,6 @@ public abstract class AbstractQueuedSynchronizer
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Attempts to acquire in shared mode. This method should query if
-     * the state of the object permits it to be acquired in the shared
-     * mode, and if so to acquire it.
-     *
-     * <p>This method is always invoked by the thread performing
-     * acquire.  If this method reports failure, the acquire method
-     * may queue the thread, if it is not already queued, until it is
-     * signalled by a release from some other thread.
-     *
-     * <p>The default implementation throws {@link
-     * UnsupportedOperationException}.
-     *
-     * @param arg the acquire argument. This value is always the one
-     *        passed to an acquire method, or is the value saved on entry
-     *        to a condition wait.  The value is otherwise uninterpreted
-     *        and can represent anything you like.
-     * @return a negative value on failure; zero if acquisition in shared
-     *         mode succeeded but no subsequent shared-mode acquire can
-     *         succeed; and a positive value if acquisition in shared
-     *         mode succeeded and subsequent shared-mode acquires might
-     *         also succeed, in which case a subsequent waiting thread
-     *         must check availability. (Support for three different
-     *         return values enables this method to be used in contexts
-     *         where acquires only sometimes act exclusively.)  Upon
-     *         success, this object has been acquired.
-     * @throws IllegalMonitorStateException if acquiring would place this
-     *         synchronizer in an illegal state. This exception must be
-     *         thrown in a consistent fashion for synchronization to work
-     *         correctly.
-     * @throws UnsupportedOperationException if shared mode is not supported
-     */
     protected int tryAcquireShared(int arg) {
         throw new UnsupportedOperationException();
     }
@@ -1412,4 +1286,216 @@ public abstract class AbstractQueuedSynchronizer
 
 ```
 
+### 4 Semaphore(信号量) — 允许多个线程同时访问
 
+关键字 **`synchronized`**  和  **`ReentrantLock`** 都是只允许一个线程访问某个资源。Semaphore(信号量)可以指定多个线程同时访问某个资源。
+
+```java
+public class SemaphoreExample1 {
+  // 请求的数量
+  private static final int threadCount = 550;
+
+  public static void main(String[] args) throws InterruptedException {
+    // 创建一个具有固定线程数量的线程池对象（如果这里线程池的线程数量给太少的话你会发现执行的很慢）
+    ExecutorService threadPool = Executors.newFixedThreadPool(300);
+    // 一次只能允许执行的线程数量。
+    final Semaphore semaphore = new Semaphore(20);
+
+    for (int i = 0; i < threadCount; i++) {
+      final int threadnum = i;
+      threadPool.execute(() -> {// Lambda 表达式的运用
+        try {
+          semaphore.acquire();// 获取一个许可，所以可运行线程数量为20/1=20
+          test(threadnum);
+          semaphore.release();// 释放一个许可
+        } catch (InterruptedException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+
+      });
+    }
+    threadPool.shutdown();
+    System.out.println("finish");
+  }
+
+  public static void test(int threadnum) throws InterruptedException {
+    Thread.sleep(1000);// 模拟请求的耗时操作
+    System.out.println("threadnum:" + threadnum);
+    Thread.sleep(1000);// 模拟请求的耗时操作
+  }
+}
+```
+
+**`Semaphore`** 好比是一条高速公路，构造函数好比说明了高速公路拥有几条车道，公平和非公平是否允许这条高速公路插队。每一个线程好比高速公路上面的汽车，**acquire** 方法好比一台骑车占用几个车道，如果占用一个车道5车道就能跑5辆车，如果要占用5个车道就只能跑一辆车。
+
+### 6. CountDownLatch
+
+**`CountDownLatch`** 是一个同步工具类，它允许一个或多个线程一直等待，直到其他线程的操作执行完后再执行。
+
+#### 6.1 CountDownLatch的三种经典用法
+
+- **某一线程在开始运行前等待n个线程执行完毕。**
+
+  一个典型应用场景就是启动一个服务时，主线程需要等待多个组件加载完毕，之后再继续执行。
+
+  或者后续的结果要用到前面几个线程的结果。
+
+  ```java
+  public class CountDownLatchTest implements Callable<String> {
+  
+      private CountDownLatch countDownLatch;
+  
+      public CountDownLatchTest(CountDownLatch countDownLatch) {
+          this.countDownLatch = countDownLatch;
+      }
+      @Override
+      public String call() throws Exception {
+  
+          try {
+              int t = 0;
+              System.out.println((t = (int)(Math.random()*10)));
+              TimeUnit.SECONDS.sleep(t);
+              return Thread.currentThread().getName() + "  " + System.currentTimeMillis();
+          } finally {
+              countDownLatch.countDown();
+          }
+      }
+  
+      public static void main(String[] args) throws Exception{
+  
+          ExecutorService executorService = Executors.newCachedThreadPool();
+          CountDownLatch latch = new CountDownLatch(3);
+          CountDownLatchTest t1 = new CountDownLatchTest(latch);
+          CountDownLatchTest t2 = new CountDownLatchTest(latch);
+          CountDownLatchTest t3 = new CountDownLatchTest(latch);
+          Future<String> tt1 =  executorService.submit(t1);
+          Future<String> tt2 =  executorService.submit(t2);
+          Future<String> tt3 =  executorService.submit(t3);
+          latch.await();
+          System.out.println(tt1.get());
+          System.out.println(tt2.get());
+          System.out.println(tt3.get());
+  
+      }
+  
+  }
+  ```
+
+  
+
+- **实现多个线程开始执行任务的最大并行性。注意是并行性，不是并发，强调的是多个线程在某一时刻同时开始执行。类似于赛跑，将多个线程放到起点，等待发令枪响，然后同时开跑。**
+
+  做法是初始化一个共享的 `CountDownLatch` 对象，将其计数器初始化为 1 ：`new CountDownLatch(1) `，多个线程在开始执行任务前首先 `coundownlatch.await()`，当主线程调用 countDown() 时，计数器变为0，多个线程同时被唤醒。
+
+  ```java
+  public class CountDownLatchTest1 implements Runnable {
+  
+      private CountDownLatch countDownLatch;
+  
+      public CountDownLatchTest1(CountDownLatch countDownLatch) {
+          this.countDownLatch = countDownLatch;
+      }
+  
+      @Override
+      public void run() {
+          try {
+              countDownLatch.await();
+              System.out.println(System.currentTimeMillis());
+              int t = 0;
+              System.out.println((t = (int)(Math.random()*10)));
+              TimeUnit.SECONDS.sleep(t);
+              System.out.println("完成---"+Thread.currentThread().getName());
+          } catch (InterruptedException e) {
+              e.printStackTrace();
+          }
+      }
+  
+      public static void main(String[] args) throws Exception{
+  		
+         //线程同时开始和线程等待结束后在执行下面的做法有点相反
+          
+          ExecutorService executorService = Executors.newCachedThreadPool();
+          CountDownLatch latch = new CountDownLatch(1); // 设置为1
+          CountDownLatchTest1 t1 = new CountDownLatchTest1(latch);
+          CountDownLatchTest1 t2 = new CountDownLatchTest1(latch);
+          CountDownLatchTest1 t3 = new CountDownLatchTest1(latch);
+  
+          executorService.execute(t1);
+          executorService.execute(t2);
+          executorService.execute(t3);
+  
+          TimeUnit.SECONDS.sleep(2);
+  
+          latch.countDown();
+          executorService.shutdown();
+  
+      }
+      
+  }
+  ```
+
+  打印结果：
+
+  ```
+  1551412043786
+  1551412043786
+  1551412043786
+  3
+  0
+  1
+  完成---pool-1-thread-3
+  完成---pool-1-thread-2
+  完成---pool-1-thread-1
+  ```
+
+  从结果看出来线程是同时开始的。
+
+- **死锁检测**
+
+#### 6.2  CountDownLatch不足
+
+CountDownLatch是一次性的，计数器的值只能在构造方法中初始化一次，之后没有任何机制再次对其设置值，当CountDownLatch使用完毕后，它不能再次被使用。
+
+### 7. CyclicBarrier (循环栅栏)
+
+CyclicBarrier 的字面意思是可循环使用（Cyclic）的屏障（Barrier）,好比一桌人吃饭一样，比如8个人一桌，人到齐了就可以开饭。如果如果小于八个人就不能开饭。能实现和CountDownLatch相类似的功能。
+
+```java
+public class CyclicBarrierTest {
+
+    private static final CyclicBarrier cyclicBarrier = new CyclicBarrier(5);
+
+    public static void main(String[] args) throws Exception{
+        ExecutorService threadPool = Executors.newFixedThreadPool(10);
+        for(int i = 0; i < 10; ++i){
+            final int threadNum = i;
+            Thread.sleep(1000);
+            threadPool.execute(() -> {
+                try {
+                    test(threadNum);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            });
+        }
+        threadPool.shutdown();
+    }
+    public static void test(int threadnum) throws InterruptedException, BrokenBarrierException {
+        System.out.println("threadnum:" + threadnum + "is ready");
+        try {
+            cyclicBarrier.await();
+        } catch (Exception e) {
+            System.out.println("-----CyclicBarrierException------");
+        }
+        System.out.println("threadnum:" + threadnum + "is finish");
+    }
+
+}
+```
+
+### 
