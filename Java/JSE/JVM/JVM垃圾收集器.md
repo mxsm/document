@@ -111,11 +111,78 @@
 
   ![图解](https://github.com/mxsm/document/blob/master/image/JSE/ParNew.png?raw=true)
 
+- **适用范围：**
 
+  - 新生代
 
+### 6. Parallel Scavenge收集器
 
+- **特性：**
 
+  Parallel Scavenge收集器是一个**新生代收集器**，它也是使用**复制算法**的收集器，又是**并行**的多线程收集器。
 
+- **应用场景：**
+
+  停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户体验，而高吞吐量则可以高效率地利用CPU时间，尽快完成程序的运算任务，主要适合在后台运算而不需要太多交互的任务。
+
+- **优点：**
+
+  GC自适应调节，Parallel Scavenge收集器有一个参数`-XX:+UseAdaptiveSizePolicy`。当这个参数打开之后，就不需要手工指定新生代的大小、Eden与Survivor区的比例、晋升老年代对象年龄等细节参数了，虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整这些参数以提供最合适的停顿时间或者最大的吞吐量，这种调节方式称为GC自适应的调节策略（GC Ergonomics）。
+
+- **试用范围：**
+
+  - 新生代GC
+
+### 7. Parallel Old收集器
+
+**`Parallel Scavenge`** 和 **`Parallel old`** 属于同一个类型的收集器但是处理里的区域不同。前一个是新生代后一个是老年代。
+
+- **特性：**
+
+  Parallel Old是Parallel Scavenge收集器的**老年代版本**，使用**多线程**和**“标记－整理”**算法。
+
+- **应用场景：**
+
+  在注重吞吐量以及CPU资源敏感的场合，都可以优先考虑Parallel Scavenge加Parallel Old收集器。这个收集器是在JDK 1.6中才开始提供的，在此之前，新生代的Parallel Scavenge收集器一直处于比较尴尬的状态。原因是，如果新生代选择了Parallel Scavenge收集器，老年代除了Serial Old收集器外别无选择（Parallel Scavenge收集器无法与CMS收集器配合工作）。由于老年代Serial Old收集器在服务端应用性能上的“拖累”，使用了Parallel Scavenge收集器也未必能在整体应用上获得吞吐量最大化的效果，由于单线程的老年代收集中无法充分利用服务器多CPU的处理能力，在老年代很大而且硬件比较高级的环境中，这种组合的吞吐量甚至还不一定有ParNew加CMS的组合“给力”。直到Parallel Old收集器出现后，“吞吐量优先”收集器终于有了比较名副其实的应用组合。
+
+- **图解：**
+
+  ![图解](https://github.com/mxsm/document/blob/master/image/JSE/ParallelOld.png?raw=true)
+
+- **适用范围：**
+
+  - 老年代
+
+### 8. CMS收集器
+
+- **特性：**
+
+  **CMS（Concurrent Mark Sweep）**收集器是一种以**获取最短回收停顿时间**为目标的收集器，它非常符合那些集中在互联网站或者B/S系统的服务端上的Java应用，这些应用都非常重视服务的响应速度。从名字上（“Mark Sweep”）就可以看出它是基于**“标记-清除”**算法实现的。
+
+  **CMS** 工作的的个步骤：
+
+  - **初始化标记(CMS initial mark):**  仅仅只是标记一下GC Roots能直接关联到的对象，速度很快，需要“Stop The World”。
+  - **并发标记(CMS Concurrent mark):** 进行**GC Roots Tracing**的过程，在整个过程中耗时最长。
+  - **重新标记(CMS remark):** 为了修正并发标记期间因用户程序继续运作而导致标记产生变动的那一部分对象的标记记录，这个阶段的停顿时间一般会比初始标记阶段稍长一些，但远比并发标记的时间短。此阶段也需要“Stop The World”。
+  - **并发清除(CMS concurrent sweep):**
+
+  由于整个过程中耗时最长的并发标记和并发清除过程收集器线程都可以与用户线程一起工作，所以，从总体上来说，CMS收集器的内存回收过程是与用户线程一起并发执行的。通过下图可以比较清楚地看到CMS收集器的运作步骤中并发和需要停顿的时间
+
+- **图解：**
+
+  ![图解](https://github.com/mxsm/document/blob/master/image/JSE/CMS.png?raw=true)
+
+- **适用范围：**
+
+  - 老年代
+
+- **优点：**
+
+  **并发收集**、**低停顿**，因此CMS收集器也被称为**并发低停顿收集器（Concurrent Low Pause Collector）**。
+
+- **缺点：**
+
+  - 
 
 
 
