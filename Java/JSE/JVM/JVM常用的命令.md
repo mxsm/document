@@ -28,3 +28,18 @@ Java HotSpot(TM) 64-Bit Server VM 18.9 (build 11.0.2+9-LTS, mixed mode)
 
 ```
 
+### JVM打印GC日志详情
+
+命令：
+
+```
+-XX:+PrintGCDetails
+```
+
+### 查看非标准的参数命令
+
+```
+java -XX:+PrintFlagsInitial  查看-XX的
+java -X 参看-X的
+```
+

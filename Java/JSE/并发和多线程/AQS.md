@@ -17,7 +17,7 @@ CLH(Craig,Landin,and Hagersten)队列是一个虚拟的双向队列（虚拟的�
 ![图解](https://github.com/mxsm/document/blob/master/image/JSE/AQS%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E5%9B%BE.png?raw=true)
 
 ```
-AQS，它维护了一个volatile int state （代表共享资源）和一个FIFO线程等待队列（多线程争用资源被阻塞时会进入此队列）。这里volatile是核心关键词保证线程的可见性。state 对于重入锁来说state是0和非零。而对于非重入锁state是0和1的区别。
+AQS，它维护了一个volatile int state （代表共享资源）和一个FIFO线程等待队列（多线程争用资源被阻塞时会进入此队列）。这里volatile是核心关键词保证线程的可见性。state 对于重入锁来说state是0和非零。而对于非重入锁state是0和1的区别。总的来说0表示共享资源没有被占用，非0表示资源被占用
 ```
 
 **state有三种：**
