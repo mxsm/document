@@ -45,3 +45,11 @@ SDS遵循C语言字符串以空字符串结尾的惯例。保存空字符串的�
 [一篇关于跳表的漫画解析](http://blog.jobbole.com/111731/)
 
 ### 整数集合
+
+### 压缩列表
+
+
+
+参考：
+
+https://www.cnblogs.com/ysocean/p/9080942.html
