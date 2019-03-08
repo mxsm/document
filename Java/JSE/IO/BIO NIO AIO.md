@@ -24,6 +24,8 @@
 
 ![图解](https://camo.githubusercontent.com/04b258a50ca7f9762f43d64e70f4489440bae4eb/68747470733a2f2f6d792d626c6f672d746f2d7573652e6f73732d636e2d6265696a696e672e616c6979756e63732e636f6d2f332e706e67)
 
+**缺点：** 单纯使用多线程处理每次进来一个连接新建一个线程，这样会导致大量的线程存在，消耗内存和CPU资源。如果使用线程池同样会存在当线程数到达一定数量的时候会导致线程切换很频繁。
+
 ### NIO
 
 NIO是一种同步非阻塞的I/O模型，在Java 1.4 中引入了NIO框架，对应 java.nio 包，提供了 Channel , Selector，Buffer等抽象。
@@ -46,4 +48,16 @@ NIO是一种同步非阻塞的I/O模型，在Java 1.4 中引入了NIO框架，�
 
   - **Buffer(缓冲区)：** 数据的读写操作全部在缓冲区
 
-  
+
+**优点：**
+
+- 使用较少的线程便可以处理许多连接。因此减少了内存管理和上下文切换带来的时间消耗
+- 当没有I/O操作的时候线程池也可以被用于其他的工作
+
+
+
+http://wiki.jikexueyuan.com/project/java-nio-zh/java-nio-selector.html
+
+https://www.cnblogs.com/nullzx/p/8932977.html
+
+https://blog.csdn.net/u010412719/article/details/52819191
