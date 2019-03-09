@@ -216,5 +216,37 @@ addLast("imHandler", new ImHandler());
 - **ChannelPipeline 可以根据需要，通过添加或者删除 ChannelHandler 来动态地修改**
 - **ChannelPipeline 有着丰富的 API 用以被调用，以响应入站和出站事件。**
 
+### ChannelHandlerContext 接口
 
+**`ChannelHandlerContext`** 代表了 **`ChannelHandler`** 和 **`ChannelPipeline`** 之间的关联，每当有 **`ChannelHandler`** 添加到 **`ChannelPipeline`** 中时，都会创建 **`ChannelHandlerContext`** 。**`ChannelHandlerContext`** 的主要功能是管理它所关联的 **`ChannelHandler`** 和在同一个 **`ChannelPipeline`** 中的其他 **`ChannelHandler`** 之间的交互。(**只要有ChannelHandler的添加就会创建ChannelHandlerContext**)
+
+**`ChannelHandlerContext`** 和 **`Channel`** 以及 **`ChannelPipeline`** 有一些相同的方法。这些方法区别在哪。
+
+- 如果调用 **`Channel`** 或者 **`ChannelPipeline`** 上的这些方法，它们将沿着整个 **`ChannelPipeline`** 进行传播。而调用位于 **`ChannelHandlerContext`** 上的相同方法，则将从当前所关联的 **`ChannelHandler`** 开始，并且只会传播给位于该 **`ChannelPipeline`** 中的下一个能够处理该事件的 **`ChannelHandler`** 。(**事件传播的范围不一样**)
+
+使用 **`ChannelHandlerContext`** 的 **API** 的时候牢记以下两点：
+
+- **`ChannelHandlerContext`** 和 **`ChannelHandler`** 之间的关联(绑定)是永远不会改变的，所以缓存对它的引用是安全的。
+- 相对于其他类的同名方法，**`ChannelHandlerContext`** 的方法将产生更短的事件流，应该尽可能地利用这个特性来获得最大的性能。 
+
+下面看一下 **`ChannelHandlerContext`** 、 **`Channel`** 和 **`ChannelPipeline`** 的关系图：
+
+![图片](https://github.com/mxsm/document/blob/master/image/netty/context-Channel-pipeline%E4%B8%89%E8%80%85%E5%85%B3%E7%B3%BB%E5%9B%BE.jpg?raw=true)
+
+下面看一下调用Channel 和 ChannelPipeline的方法导致写入事件从尾端到头部地流经 ChannelPipeline示意图：
+
+![图解](https://github.com/mxsm/document/blob/master/image/netty/Channel-ChannelPipeline%E4%BA%8B%E4%BB%B6%E4%BC%A0%E6%92%AD%E5%9B%BE.jpg?raw=true)
+
+**注意：重要的是要注意到，虽然被调用的 Channel 或 ChannelPipeline 上的 write()方法将一直传播事件通**
+**过整个 ChannelPipeline，但是在 ChannelHandler 的级别上，事件从一个 ChannelHandler到下一个 ChannelHandler 的移动是由 ChannelHandlerContext 上的调用完成的。**
+
+下面看一下 **`ChannelHandlerContext`** 事件被传播示意图：
+
+![图解](https://github.com/mxsm/document/blob/master/image/netty/ChannelHandlerContext%E8%A7%A6%E5%8F%91%E7%9A%84%E6%93%8D%E4%BD%9C%E6%B5%81%E7%A8%8B%E4%BA%8B%E4%BB%B6%E4%BC%A0%E6%92%AD.jpg?raw=true)
+
+### 总结：
+
+- **Channel的生命周期以及ChannelPipeline的生命周期— 这两个生命周期是同生死**
+- **Channel ChannelPipeline 以及 ChannelHandlerContext 事件传播范围**
+- **Channel ChannelPipeline 以及 ChannelHandlerContext 三者之间的关系**
 
