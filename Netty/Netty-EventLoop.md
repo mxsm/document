@@ -36,3 +36,11 @@ public interface EventLoop extends OrderedEventExecutor, EventLoopGroup {
 消除潜在的数据损坏的可能性。
 ```
 
+### 3 EventLoop异步工作原理
+
+![图解](https://github.com/mxsm/document/blob/master/image/netty/EventLoop%E5%BC%82%E6%AD%A5%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86.jpg?raw=true)
+
+- **一个EventLoop绑定一个线程**
+- **一个EventLoop可以绑定多个Channel，并且Channel的整个生命周期都由一个EventLoop处理**
+- **在Channel整个生命周期当中都是由一个EventLoop进行处理的。换句话说是由一个线程处理(好处：减少了多线程之间线程上下文的切换过程，所以在Netty编程过程中尽可能的减少对Channel时间的占用)**
+
