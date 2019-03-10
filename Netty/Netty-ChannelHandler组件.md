@@ -69,7 +69,9 @@
 
 ### ChannelPipeline 接口
 
-**`ChannelPipeline`** 是一个拦截流经 **`Channel`** 的入站和出站事件的 **ChannelHandler** 实例链。
+**`ChannelPipeline`** 是一个拦截流经 **`Channel`** 的入站和出站事件的 **ChannelHandler** 实例链。下图为 **`Netty-4.1.17`** 中给出来的示意图：
+
+![图解](https://github.com/mxsm/document/blob/master/image/netty/ChannelPipelineJDK%E4%B8%AD%E7%A4%BA%E6%84%8F%E5%9B%BE.jpg?raw=true)
 
 每一个新创建的 **`Channel`** 都将会被分配一个新的 **`ChannelPipeline`** 。这项关联是永久性的在整个生命周期当中。 **`Channel`** 既不能附加另外一个  **`ChannelPipeline`** ，也不能分离其当前的。在 **`Netty`** 组件的生命周期中，这一项固定的操作，不需要开发人员的任何干预。
 
