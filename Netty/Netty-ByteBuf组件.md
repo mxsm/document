@@ -15,7 +15,7 @@
 
 当 **readerIndex：** >  **writerIndex** 的时候就会出现越界的异常。
 
-名称已 **`set`** 和 **`write`** 开头的 **`ByteBuf`** 方法， 将会推进对应的索引。而以 **`get`** 和 **`set`** 开头的则不会。 **`ByteBuf`** 默认真的最大容量为  **`Integer.MAX_VALUE`** 
+名称已 **`read`** 和 **`write`** 开头的 **`ByteBuf`** 方法， 将会推进对应的索引。而以 **`get`** 和 **`set`** 开头的则不会。 **`ByteBuf`** 默认真的最大容量为  **`Integer.MAX_VALUE`** 
 
 ### ByteBuf 的使用模式
 
