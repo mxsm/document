@@ -180,9 +180,9 @@
 
   **CMS** 工作的的个步骤：
 
-  - **初始化标记(CMS initial mark):**  仅仅只是标记一下GC Roots能直接关联到的对象，速度很快，需要“Stop The World”。
-  - **并发标记(CMS Concurrent mark):** 进行**GC Roots Tracing**的过程，在整个过程中耗时最长。
-  - **重新标记(CMS remark):** 为了修正并发标记期间因用户程序继续运作而导致标记产生变动的那一部分对象的标记记录，这个阶段的停顿时间一般会比初始标记阶段稍长一些，但远比并发标记的时间短。此阶段也需要“Stop The World”。
+  - **初始化标记(CMS initial mark):**  仅仅只是标记一下GC Roots能直接关联到的对象，速度很快，需要“Stop The World”。 —— **串行**
+  - **并发标记(CMS Concurrent mark):** 进行**GC Roots Tracing**的过程，在整个过程中耗时最长。— **并发**
+  - **重新标记(CMS remark):** 为了修正并发标记期间因用户程序继续运作而导致标记产生变动的那一部分对象的标记记录，这个阶段的停顿时间一般会比初始标记阶段稍长一些，但远比并发标记的时间短。此阶段也需要“Stop The World”。 — **并行 多个CG线程同时工作**
   - **并发清除(CMS concurrent sweep):**
 
   由于整个过程中耗时最长的并发标记和并发清除过程收集器线程都可以与用户线程一起工作，所以，从总体上来说，CMS收集器的内存回收过程是与用户线程一起并发执行的。通过下图可以比较清楚地看到CMS收集器的运作步骤中并发和需要停顿的时间
@@ -236,6 +236,8 @@
   - **筛选回收（Live Data Counting and Evacuation）** 首先对各个Region中的回收价值和成本进行排序，根据用户所期望的GC 停顿是时间来制定回收计划。此阶段其实也可以做到与用户程序一起并发执行，但是因为只回收一部分Region，时间是用户可控制的，而且停顿用户线程将大幅度提高收集效率.
 
   ![图解](https://github.com/mxsm/document/blob/master/image/JSE/G1%E8%BF%90%E8%A1%8C%E5%9B%BE%E8%A7%A3.jpg?raw=true)
+
+  美团对于G1 GC[](https://tech.meituan.com/2016/09/23/g1.html)
 
 ### 10. 什么时候会发生GC
 
