@@ -161,3 +161,33 @@ private int threshold; // Default to 0
         }
 ```
 
+接下来看看 **`ThreadLocal#get`** 方法
+
+```java
+    public T get() {
+        Thread t = Thread.currentThread();
+        ThreadLocalMap map = getMap(t);
+        if (map != null) {
+            ThreadLocalMap.Entry e = map.getEntry(this);
+            if (e != null) {
+                @SuppressWarnings("unchecked")
+                T result = (T)e.value;
+                return result;
+            }
+        }
+        return setInitialValue();
+    }
+
+```
+
+看一下 **`ThreadLocal#remove`** 方法
+
+```java
+public void remove() {
+         ThreadLocalMap m = getMap(Thread.currentThread());
+         if (m != null)
+             //调用ThreadLocalMap的remove
+             m.remove(this);
+     }
+```
+
