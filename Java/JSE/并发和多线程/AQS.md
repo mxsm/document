@@ -70,6 +70,28 @@ AQS，它维护了一个volatile int state （代表共享资源）和一个FIFO
 
 - **tryReleaseShared(int)** ：共享方式。尝试释放资源，成功则返回true，失败则返回false。
 
+- **getState()** ：返回同步状态的当前值
+
+- **setState(int newState)**：设置当前同步状态
+
+- **compareAndSetState(int expect, int update)**：使用CAS设置当前状态，该方法能够保证状态设置的原子性；
+
+- **acquire(int arg)**：独占式获取同步状态，如果当前线程获取同步状态成功，则由该方法返回，否则，将会进入同步队列等待，该方法将会调用可重写的tryAcquire(int arg)方法；
+
+- **acquireInterruptibly(int arg)**：与**acquire(int arg)**相同，但是该方法响应中断，当前线程为获取到同步状态而进入到同步队列中，如果当前线程被中断，则该方法会抛出 **`InterruptedException`** 异常并返回；
+
+- **tryAcquireNanos(int arg,long nanos)**：超时获取同步状态，如果当前线程在nanos时间内没有获取到同步状态，那么将会返回false，已经获取则返回true；
+
+- **acquireShared(int arg)**：共享式获取同步状态，如果当前线程未获取到同步状态，将会进入同步队列等待，与独占式的主要区别是在同一时刻可以有多个线程获取到同步状态；
+
+- **acquireSharedInterruptibly(int arg)**：共享式获取同步状态，响应中断
+
+- **tryAcquireSharedNanos(int arg, long nanosTimeout)**：共享式获取同步状态，增加超时限制；
+
+- **release(int arg)**：独占式释放同步状态，该方法会在释放同步状态之后，将同步队列中第一个节点包含的线程唤醒
+
+- **releaseShared(int arg)**：共享式释放同步状态；
+
 ```
 以ReentrantLock为例，state初始化为0，表示未锁定状态。A线程lock()时，会调用tryAcquire()独占该锁并将state+1。此后，其他线程再tryAcquire()时就会失败，直到A线程unlock()到state=0（即释放锁）为止，其它线程才有机会获取该锁。当然，释放锁之前，A线程自己是可以重复获取此锁的（state会累加），这就是可重入的概念。但要注意，获取多少次就要释放多么次，这样才能保证state是能回到零态的。
 
