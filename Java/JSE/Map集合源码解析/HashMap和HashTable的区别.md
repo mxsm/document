@@ -81,7 +81,7 @@
           int newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
      ```
 
-5. **底层数据结构:**JDK1.8以后的HashMap在解决Hash冲突试用了哈希表+链表+红黑树，链表转换为红黑树的状态的阈值为8。用来减少搜索时间，HashTable没有这样的改动
+5. **底层数据结构:** JDK1.8以后的HashMap在解决Hash冲突试用了哈希表+链表+红黑树，链表转换为红黑树的状态的阈值为8。用来减少搜索时间，HashTable没有这样的改动
 
 
 
