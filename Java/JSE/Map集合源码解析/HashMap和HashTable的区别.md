@@ -39,7 +39,7 @@
 
 2. **效率:** 因为线程安全问题，HashMap要比HashTable效率略高一点，JDK1.8基本上被淘汰了，不要在代码中使用
 
-3. **对Null key 和Null value的支持：**HashMap可以用null作为键值，这样的且只有一个。但是在 HashTable 中 put 进的键值或者value只要有一个 null，直接抛出 NullPointerException
+3. **对Null key 和Null value的支持：** HashMap可以用null作为键值，这样的且只有一个。但是在 HashTable 中 put 进的键值或者value只要有一个 null，直接抛出 NullPointerException
 
    ```java
    //HashTable
