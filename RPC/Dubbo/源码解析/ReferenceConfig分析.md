@@ -194,124 +194,125 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
        }
        ```
 
+   查看 **`ref = createProxy(map);`** 代码
 
-     查看 **`ref = createProxy(map);`** 代码
+   ```java
+    private T createProxy(Map<String, String> map) {
+      			//判断是否为JVM内部的引用
+           if (shouldJvmRefer(map)) {
+               URL url = new URL(Constants.LOCAL_PROTOCOL, Constants.LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
+               invoker = refprotocol.refer(interfaceClass, url);
+               if (logger.isInfoEnabled()) {
+                   logger.info("Using injvm service " + interfaceClass.getName());
+               }
+           } else {
+               if (url != null && url.length() > 0) { 
+                   String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
+                   if (us != null && us.length > 0) {
+                       for (String u : us) {
+                           URL url = URL.valueOf(u);
+                           if (StringUtils.isEmpty(url.getPath())) {
+                               url = url.setPath(interfaceName);
+                           }
+                           if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+                               urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
+                           } else {
+                               urls.add(ClusterUtils.mergeUrl(url, map));
+                           }
+                       }
+                   }
+               } else { // assemble URL from register center's configuration
+                   checkRegistry();
+                   List<URL> us = loadRegistries(false);
+                   if (CollectionUtils.isNotEmpty(us)) {
+                       for (URL u : us) {
+                           URL monitorUrl = loadMonitor(u);
+                           if (monitorUrl != null) {
+                               map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
+                           }
+                           urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
+                       }
+                   }
+                   if (urls.isEmpty()) {
+                       throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
+                   }
+               }
+   
+               if (urls.size() == 1) {
+                   //获取引用Invoker
+                   invoker = refprotocol.refer(interfaceClass, urls.get(0));
+               } else {
+                   List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
+                   URL registryURL = null;
+                   for (URL url : urls) {
+                       invokers.add(refprotocol.refer(interfaceClass, url));
+                       if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
+                           registryURL = url; // use last registry url
+                       }
+                   }
+                   if (registryURL != null) { // registry url is available
+                       // use RegistryAwareCluster only when register's cluster is available
+                       URL u = registryURL.addParameter(Constants.CLUSTER_KEY, RegistryAwareCluster.NAME);
+                       // The invoker wrap relation would be: RegistryAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, will execute route) -> Invoker
+                       invoker = cluster.join(new StaticDirectory(u, invokers));
+                   } else { // not a registry url, must be direct invoke.
+                       invoker = cluster.join(new StaticDirectory(invokers));
+                   }
+               }
+           }
+   
+           if (shouldCheck() && !invoker.isAvailable()) {
+              
+               initialized = false;
+               throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
+           }
+           if (logger.isInfoEnabled()) {
+               logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
+           }
+           /**
+            * @since 2.7.0
+            * ServiceData Store
+            */
+           MetadataReportService metadataReportService = null;
+           if ((metadataReportService = getMetadataReportService()) != null) {
+               URL consumerURL = new URL(Constants.CONSUMER_PROTOCOL, map.remove(Constants.REGISTER_IP_KEY), 0, map.get(Constants.INTERFACE_KEY), map);
+               metadataReportService.publishConsumer(consumerURL);
+           }
+           // create service proxy
+           return (T) proxyFactory.getProxy(invoker);
+       }
+   ```
 
-     ```java
-      private T createProxy(Map<String, String> map) {
-        			//判断是否为JVM内部的引用
-             if (shouldJvmRefer(map)) {
-                 URL url = new URL(Constants.LOCAL_PROTOCOL, Constants.LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
-                 invoker = refprotocol.refer(interfaceClass, url);
-                 if (logger.isInfoEnabled()) {
-                     logger.info("Using injvm service " + interfaceClass.getName());
-                 }
-             } else {
-                 if (url != null && url.length() > 0) { 
-                     String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
-                     if (us != null && us.length > 0) {
-                         for (String u : us) {
-                             URL url = URL.valueOf(u);
-                             if (StringUtils.isEmpty(url.getPath())) {
-                                 url = url.setPath(interfaceName);
-                             }
-                             if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-                                 urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
-                             } else {
-                                 urls.add(ClusterUtils.mergeUrl(url, map));
-                             }
-                         }
-                     }
-                 } else { // assemble URL from register center's configuration
-                     checkRegistry();
-                     List<URL> us = loadRegistries(false);
-                     if (CollectionUtils.isNotEmpty(us)) {
-                         for (URL u : us) {
-                             URL monitorUrl = loadMonitor(u);
-                             if (monitorUrl != null) {
-                                 map.put(Constants.MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
-                             }
-                             urls.add(u.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
-                         }
-                     }
-                     if (urls.isEmpty()) {
-                         throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
-                     }
-                 }
+   通过 URL中的 **`protocol`** 然后通过 **`ExtensionLoader`** 类获取对应的值。
+
+   ```java
+    private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
+   //Protocol都是通过javassist 动态生成代码
+   ```
+
+   ```java
+   /**
+     * Protocol 实现的默认值名称为dubbo
+     *
+     *
+     */
+   @SPI("dubbo")
+   public interface Protocol {
+       int getDefaultPort();
      
-                 if (urls.size() == 1) {
-                     //获取引用Invoker
-                     invoker = refprotocol.refer(interfaceClass, urls.get(0));
-                 } else {
-                     List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
-                     URL registryURL = null;
-                     for (URL url : urls) {
-                         invokers.add(refprotocol.refer(interfaceClass, url));
-                         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-                             registryURL = url; // use last registry url
-                         }
-                     }
-                     if (registryURL != null) { // registry url is available
-                         // use RegistryAwareCluster only when register's cluster is available
-                         URL u = registryURL.addParameter(Constants.CLUSTER_KEY, RegistryAwareCluster.NAME);
-                         // The invoker wrap relation would be: RegistryAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, will execute route) -> Invoker
-                         invoker = cluster.join(new StaticDirectory(u, invokers));
-                     } else { // not a registry url, must be direct invoke.
-                         invoker = cluster.join(new StaticDirectory(invokers));
-                     }
-                 }
-             }
-     
-             if (shouldCheck() && !invoker.isAvailable()) {
-                
-                 initialized = false;
-                 throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
-             }
-             if (logger.isInfoEnabled()) {
-                 logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
-             }
-             /**
-              * @since 2.7.0
-              * ServiceData Store
-              */
-             MetadataReportService metadataReportService = null;
-             if ((metadataReportService = getMetadataReportService()) != null) {
-                 URL consumerURL = new URL(Constants.CONSUMER_PROTOCOL, map.remove(Constants.REGISTER_IP_KEY), 0, map.get(Constants.INTERFACE_KEY), map);
-                 metadataReportService.publishConsumer(consumerURL);
-             }
-             // create service proxy
-             return (T) proxyFactory.getProxy(invoker);
-         }
-     ```
+       @Adaptive
+       <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
+   
+       @Adaptive
+       <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;
+   
+       void destroy();
+   }
+   ```
 
-     通过 URL中的 **`protocol`** 然后通过 **`ExtensionLoader`** 类获取对应的值。
+   下图是Dubbo的数据加载的截图：
 
-     ```java
-      private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
-     //Protocol都是通过javassist 动态生成代码
-     ```
+   ![图解](https://github.com/mxsm/document/blob/master/image/RPC/Dubbo/Dubbo%E5%8A%A8%E6%80%81%E7%94%9F%E6%88%90%E9%80%82%E9%85%8D%E5%AF%B9%E8%B1%A1%E8%AF%B4%E6%98%8E%E6%88%AA%E5%9B%BE.jpg?raw=true)
 
-     ```java
-     /**
-       * Protocol 实现的默认值名称为dubbo
-       *
-       *
-       */
-     @SPI("dubbo")
-     public interface Protocol {
-         int getDefaultPort();
-       
-         @Adaptive
-         <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
-     
-         @Adaptive
-         <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;
-     
-         void destroy();
-     }
-     ```
 
-     下图是Dubbo的数据加载的截图：
-
-     ![图解](https://github.com/mxsm/document/blob/master/image/RPC/Dubbo/Dubbo%E5%8A%A8%E6%80%81%E7%94%9F%E6%88%90%E9%80%82%E9%85%8D%E5%AF%B9%E8%B1%A1%E8%AF%B4%E6%98%8E%E6%88%AA%E5%9B%BE.jpg?raw=true)
 
