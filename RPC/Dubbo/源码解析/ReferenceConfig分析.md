@@ -234,7 +234,7 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
                        }
                    }
                    if (urls.isEmpty()) {
-                       throw new IllegalStateException("No such any registry to reference " + interfaceName + " on the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion() + ", please config <dubbo:registry address=\"...\" /> to your spring config.");
+                      //抛出错误
                    }
                }
    
@@ -253,7 +253,7 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
                    if (registryURL != null) { // registry url is available
                        // use RegistryAwareCluster only when register's cluster is available
                        URL u = registryURL.addParameter(Constants.CLUSTER_KEY, RegistryAwareCluster.NAME);
-                       // The invoker wrap relation would be: RegistryAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, will execute route) -> Invoker
+                       // 
                        invoker = cluster.join(new StaticDirectory(u, invokers));
                    } else { // not a registry url, must be direct invoke.
                        invoker = cluster.join(new StaticDirectory(invokers));
@@ -264,7 +264,7 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
            if (shouldCheck() && !invoker.isAvailable()) {
               
                initialized = false;
-               throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
+               //抛出错误
            }
            if (logger.isInfoEnabled()) {
                logger.info("Refer dubbo service " + interfaceClass.getName() + " from url " + invoker.getUrl());
@@ -314,5 +314,52 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
 
    ![图解](https://github.com/mxsm/document/blob/master/image/RPC/Dubbo/Dubbo%E5%8A%A8%E6%80%81%E7%94%9F%E6%88%90%E9%80%82%E9%85%8D%E5%AF%B9%E8%B1%A1%E8%AF%B4%E6%98%8E%E6%88%AA%E5%9B%BE.jpg?raw=true)
 
+代码：
 
+```java
+private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
+```
+
+由于Dubbo没有已经写好带有 **`@Adaptive`** 的实现类，通过动态生成的 **`Adaptive Protocol`** 。在这个地方加载的
+
+```java
+public class Protocol$Adaptive {
+
+    public void destroy() {
+        throw new UnsupportedOperationException("The method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+    }
+
+    public int getDefaultPort() {
+        throw new UnsupportedOperationException("The method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!");
+    }
+
+    public org.apache.dubbo.rpc.Exporter export(org.apache.dubbo.rpc.Invoker arg0) throws org.apache.dubbo.rpc.RpcException {
+        if (arg0 == null) throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument == null");
+        if (arg0.getUrl() == null)
+            throw new IllegalArgumentException("org.apache.dubbo.rpc.Invoker argument getUrl() == null");
+        org.apache.dubbo.common.URL url = arg0.getUrl();
+        String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        if (extName == null)
+            throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+        org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+        return extension.export(arg0);
+    }
+
+    public org.apache.dubbo.rpc.Invoker refer(java.lang.Class arg0, org.apache.dubbo.common.URL arg1) throws org.apache.dubbo.rpc.RpcException {
+        if (arg1 == null) throw new IllegalArgumentException("url == null");
+        org.apache.dubbo.common.URL url = arg1;
+        String extName = (url.getProtocol() == null ? "dubbo" : url.getProtocol());
+        if (extName == null)
+            throw new IllegalStateException("Failed to get extension (org.apache.dubbo.rpc.Protocol) name from url (" + url.toString() + ") use keys([protocol])");
+        org.apache.dubbo.rpc.Protocol extension = (org.apache.dubbo.rpc.Protocol) ExtensionLoader.getExtensionLoader(org.apache.dubbo.rpc.Protocol.class).getExtension(extName);
+        return extension.refer(arg0, arg1);
+    }
+}
+```
+
+当 **`invoker = refprotocol.refer(interfaceClass, urls.get(0));`** 调用，**`url.getProtocol()`** 的值为 **`registry`** , 那就会获取 **`registry`** 的实现类 
+
+```
+registry=org.apache.dubbo.registry.integration.RegistryProtocol
+```
 
