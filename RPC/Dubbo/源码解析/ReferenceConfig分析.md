@@ -1,4 +1,4 @@
-### ReferenceConfig代码分析
+###  ReferenceConfig代码分析
 
 首先看一下 **`ReferenceConfig`** 继承关系：
 
@@ -200,12 +200,14 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
     private T createProxy(Map<String, String> map) {
       			//判断是否为JVM内部的引用
            if (shouldJvmRefer(map)) {
+             	//本地调用
                URL url = new URL(Constants.LOCAL_PROTOCOL, Constants.LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
                invoker = refprotocol.refer(interfaceClass, url);
                if (logger.isInfoEnabled()) {
                    logger.info("Using injvm service " + interfaceClass.getName());
                }
            } else {
+             	//远程调用
                if (url != null && url.length() > 0) { 
                    String[] us = Constants.SEMICOLON_SPLIT_PATTERN.split(url);
                    if (us != null && us.length > 0) {
@@ -222,7 +224,9 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
                        }
                    }
                } else { // assemble URL from register center's configuration
-                   checkRegistry();
+                  //检查注册中心 
+                 	checkRegistry();
+                 	 //从注册中心装配URL
                    List<URL> us = loadRegistries(false);
                    if (CollectionUtils.isNotEmpty(us)) {
                        for (URL u : us) {
@@ -239,9 +243,10 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
                }
    
                if (urls.size() == 1) {
-                   //获取引用Invoker
+                   //单个注册中心直联
                    invoker = refprotocol.refer(interfaceClass, urls.get(0));
                } else {
+                 	//多个注册中心或者多个服务提供者
                    List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                    URL registryURL = null;
                    for (URL url : urls) {
@@ -277,19 +282,19 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
            if ((metadataReportService = getMetadataReportService()) != null) {
                URL consumerURL = new URL(Constants.CONSUMER_PROTOCOL, map.remove(Constants.REGISTER_IP_KEY), 0, map.get(Constants.INTERFACE_KEY), map);
                metadataReportService.publishConsumer(consumerURL);
-           }
+         }
            // create service proxy
-           return (T) proxyFactory.getProxy(invoker);
+         return (T) proxyFactory.getProxy(invoker);
        }
    ```
-
+  
    通过 URL中的 **`protocol`** 然后通过 **`ExtensionLoader`** 类获取对应的值。
 
    ```java
     private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
    //Protocol都是通过javassist 动态生成代码
    ```
-
+  
    ```java
    /**
      * Protocol 实现的默认值名称为dubbo
@@ -304,14 +309,14 @@ XxxService xxxService = reference.get(); // 注意：此代理对象内部封装
        <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
    
        @Adaptive
-       <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;
+     <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;
    
-       void destroy();
+     void destroy();
    }
    ```
-
+  
    下图是Dubbo的数据加载的截图：
-
+  
    ![图解](https://github.com/mxsm/document/blob/master/image/RPC/Dubbo/Dubbo%E5%8A%A8%E6%80%81%E7%94%9F%E6%88%90%E9%80%82%E9%85%8D%E5%AF%B9%E8%B1%A1%E8%AF%B4%E6%98%8E%E6%88%AA%E5%9B%BE.jpg?raw=true)
 
 代码：
