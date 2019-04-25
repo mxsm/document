@@ -35,5 +35,9 @@
 ![图](https://github.com/mxsm/document/blob/master/image/database/masterslave%E5%8E%9F%E7%90%86%E5%9B%BE.jpg?raw=true)
 
 - 当从节点连接主节点时，主节点会创建一个log dump 线程，用于发送bin-log的内容。在读取bin-log中的操作时，此线程会对主节点上的bin-log加锁，当读取完成，甚至在发动给从节点之前，锁会被释放。
-- 当从节点上执行`start slave`命令之后，从节点会创建一个I/O线程用来连接主节点，请求主库中更新的bin-log。I/O线程接收到主节点binlog dump 进程发来的更新之后，保存在本地relay-log中。
+- 当从节点上执行`start slave`命令之后，从节点会创建一个I/O线程用来连接主节点，请求主库中更新的bin-log。I/O线程接收到主节点binlog dump 进程发来的更新之后，保存在本地relay-log中。(这个线程不会对事件进行轮询。如果该线程追赶上了主库，他将进入睡眠状态，知道主库发送信号量通知其有新的事件产生时才会被唤醒)
 - SQL线程负责读取relay log中的内容，解析成具体的操作并执行，最终保证主从数据的一致性。
+
+> 1. 在主库上把数据更改记录到二进制日志(Binary Log)中。
+> 2. 备库将主库上的日志复制到自己的中继日志(Relay Log)中
+> 3. 备库读取中继日志中的实践，将其重放到备库数据之上
