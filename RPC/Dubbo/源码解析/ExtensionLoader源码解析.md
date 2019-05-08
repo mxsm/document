@@ -451,6 +451,63 @@ private Class<?> createAdaptiveExtensionClass() {
 
 到这里基本上的ExtensionLoader已经分析完成。
 
+这里还有一个地方需要分析：
+
+```java
+    public T getExtension(String name) {
+        if (StringUtils.isEmpty(name)) {
+            throw new IllegalArgumentException("Extension name == null");
+        }
+        if ("true".equals(name)) {
+            return getDefaultExtension();
+        }
+        Holder<Object> holder = getOrCreateHolder(name);
+        Object instance = holder.get();
+        if (instance == null) {
+            synchronized (holder) {
+                instance = holder.get();
+                if (instance == null) {
+                    instance = createExtension(name);
+                    holder.set(instance);
+                }
+            }
+        }
+        return (T) instance;
+    }
+```
+
+在调用 **`getExtension`** 方法会自动对类进行包装：
+
+```java
+    private T createExtension(String name) {
+        Class<?> clazz = getExtensionClasses().get(name);
+        if (clazz == null) {
+            throw findException(name);
+        }
+        try {
+            T instance = (T) EXTENSION_INSTANCES.get(clazz);
+            if (instance == null) {
+                EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());
+                instance = (T) EXTENSION_INSTANCES.get(clazz);
+            }
+            injectExtension(instance);
+            Set<Class<?>> wrapperClasses = cachedWrapperClasses;
+            if (CollectionUtils.isNotEmpty(wrapperClasses)) {
+                for (Class<?> wrapperClass : wrapperClasses) {
+                  	//生成包装类 
+                    instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
+                }
+            }
+            return instance;
+        } catch (Throwable t) {
+            throw new IllegalStateException("Extension instance (name: " + name + ", class: " +
+                    type + ") couldn't be instantiated: " + t.getMessage(), t);
+        }
+    }
+```
+
+如果没有包装类直接对象。这里就解释了为什么定义的默认集群为 **FailoverCluster** 最后变成了 **MockerClusterWrapper** 这里给出了解释。在 **Cluster** 有多重实现包括Wapper类型
+
 ### 总结
 
 - **主要利用了Java SPI的思想并且对SPI进行了拓展。**
