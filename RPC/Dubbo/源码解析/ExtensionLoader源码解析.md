@@ -508,6 +508,29 @@ private Class<?> createAdaptiveExtensionClass() {
 
 如果没有包装类直接对象。这里就解释了为什么定义的默认集群为 **FailoverCluster** 最后变成了 **MockerClusterWrapper** 这里给出了解释。在 **Cluster** 有多重实现包括Wapper类型
 
+### Dubbo SPI高级用法之 AOP
+
+在用Spring的时候，我们经常会用到AOP功能。在目标类的方法前后插入其他逻辑。比如通常使用Spring AOP来实现日志，监控和鉴权等功能。 Dubbo的扩展机制，是否也支持类似的功能呢？答案是yes。在Dubbo中，有一种特殊的类，被称为Wrapper类。通过装饰者模式，使用包装类包装原始的扩展点实例。在原始扩展点实现前后插入其他逻辑，实现AOP功能。
+
+### 什么是Wrapper类
+
+那什么样类的才是Dubbo扩展机制中的Wrapper类呢？Wrapper类是一个有复制构造函数的类，也是典型的装饰者模式。下面就是一个Wrapper类:
+
+```java
+class A{
+    private A a;
+    public A(A a){
+        this.a = a;
+    }
+}
+```
+
+类A有一个构造函数`public A(A a)`，构造函数的参数是A本身。这样的类就可以成为Dubbo扩展机制中的一个Wrapper类。Dubbo中这样的Wrapper类有ProtocolFilterWrapper, ProtocolListenerWrapper等, 大家可以查看源码加深理解。
+
+
+
+
+
 ### 总结
 
 - **主要利用了Java SPI的思想并且对SPI进行了拓展。**
