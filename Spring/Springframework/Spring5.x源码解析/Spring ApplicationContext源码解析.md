@@ -1,0 +1,42 @@
+### ApplicationContext源码解析
+
+在Spring框架的使用过程中见得最多的一个类就是 **`ApplicationContext`** 这个类贯穿了整个Spring的开发。下面来看一下该类的一些定义：
+
+```java
+public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
+		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
+
+	@Nullable
+	String getId();
+
+
+	String getApplicationName();
+
+
+	String getDisplayName();
+
+
+	long getStartupDate();
+
+	@Nullable
+	ApplicationContext getParent();
+
+	AutowireCapableBeanFactory getAutowireCapableBeanFactory() throws IllegalStateException;
+
+}
+```
+
+从定义可以看出来，继承了 **`EnvironmentCapable`** , **`ListableBeanFactory`** , **`HierarchicalBeanFactory`** , 
+		**`MessageSource`** , **`ApplicationEventPublisher`** , **`ResourcePatternResolver`** 继承都是一些基础的接口。
+
+对于 **`ApplicationContext`** 的实现主要在 **Java** 的开发项目中有四个：
+
+- ClassPathXmlApplicationContext
+- AnnotationConfigApplicationContext
+- XmlWebApplicationContext
+- AnnotationConfigWebApplicationContext
+
+> 上面的四个实现大体能够分成两大类：
+>
+> - 对以前传统的XML配置的支持
+> - 对注解的支持
