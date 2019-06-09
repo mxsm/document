@@ -55,7 +55,7 @@ public class MxsmSchemaHandler extends NamespaceHandlerSupport {
 
 通过实现继承 **`NamespaceHandlerSupport`** 来实现：
 
-> registerBeanDefinitionParser("application", new MxsmBeanDefinitionParser()) 通过这个来实现解析不同的Element名称
+> registerBeanDefinitionParser("application", new MxsmBeanDefinitionParser()) 通过这个来实现解析不同的Element名称，第一个参数是节点的名称
 
 #### 2.3 编写一个或者多个 `BeanDefinitionParser` 的实现
 
