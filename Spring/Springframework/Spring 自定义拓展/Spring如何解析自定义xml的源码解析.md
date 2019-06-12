@@ -194,4 +194,34 @@ handlerMappings.put(namespaceUri, namespaceHandler);
 >
 > Debug的代码在上面已经给出来了。
 
-............有点晚了明天接着分析  睡觉了
+在调用过程中有一个 **`DefaultBeanDefinitionDocumentReader`** 类。通过上图可以看出调用了这样一段方法
+
+```java
+	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
+        //判断是否为http://www.springframework.org/schema/beans默认的空间
+		if (delegate.isDefaultNamespace(root)) {
+			NodeList nl = root.getChildNodes();
+			for (int i = 0; i < nl.getLength(); i++) {
+				Node node = nl.item(i);
+				if (node instanceof Element) {
+					Element ele = (Element) node;
+                    //判断是否为默认的命名空间
+					if (delegate.isDefaultNamespace(ele)) {
+						parseDefaultElement(ele, delegate);
+					}
+					else {
+                        //自定义的命名空间--用户自定义的和Spring AOP等等
+						delegate.parseCustomElement(ele);
+					}
+				}
+			}
+		}
+		else {
+			delegate.parseCustomElement(root);
+		}
+	}
+
+```
+
+> 上面的方法给出了为什么没有进入 **DefaultNamespaceHandlerResolver** 中，因为只有http://www.springframework.org/schema/bean才是默认的命名空间
+
