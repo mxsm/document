@@ -87,7 +87,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			//准备刷新当前 ApplicationContext.
 			prepareRefresh();
 
-			// 告诉子类去刷新内部的Bean Factory
+			// 告诉子类去刷新内部的Bean Factory--bean的解析和加载Bean的定义
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 
@@ -101,7 +101,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//调用 factory processors在当前 context 注册为Beans
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				//注册创建拦截器处理器
+				//注册Bean的后置处理器
 				registerBeanPostProcessors(beanFactory);
 
 				// 为当前context初始化消息资源 .
