@@ -18,6 +18,10 @@ Spring Bean的实例化图解：
 
   ![图](https://github.com/mxsm/document/blob/master/image/Spring/Springframework/BeanPostProcessor-core.png?raw=true)
 
+- Spring Boot相关的实现
+
+  ![图](https://github.com/mxsm/document/blob/master/image/Spring/Springframework/BeanPostProcessor-springboot.png?raw=true)
+
   
 
 BeanPostProcessor是在Bean实例化后，在自定义初始化方法前后执行。
