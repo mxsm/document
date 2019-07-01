@@ -233,4 +233,13 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 > 代码示例地址：https://github.com/mxsm/spring-sample/tree/master/spring-beanPostProcessor
 
+### 总结
+
+**BeanPostProcessor 主要用来处理Bean的相关。**
+
+> 1.  自定义类似于@Value，@Autowired的注解
+> 2. 主要用于处理Bean内部的注解实现
+
+
+
 https://cloud.tencent.com/developer/article/1409273
