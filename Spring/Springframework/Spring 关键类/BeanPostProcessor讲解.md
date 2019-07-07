@@ -6,6 +6,8 @@ BeanPostProcessor接口作用是：如果我们需要在Spring容器完成Bean�
 
 Spring Bean的实例化图解：
 
+![图解](https://github.com/mxsm/document/blob/master/image/Spring/Springframework/SpringBean%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B9%8B%E5%88%9D%E5%A7%8B%E5%8C%96.png?raw=true)
+
 ![图](https://github.com/mxsm/document/blob/master/image/Spring/Springframework/bean%E5%AE%9E%E4%BE%8B%E5%8C%96%E8%BF%87%E7%A8%8B.png?raw=true)
 
 在检查完 **Aware** 接口后，就开始调用 **BeanPostProcessor** 进行前置处理后后置处理。下面来看一下Spring中的几类继承：
@@ -235,7 +237,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 ### 总结
 
-**BeanPostProcessor 主要用来处理Bean的相关。**
+**BeanPostProcessor 主要用来处理Bean内部的注解。比如Spring自己实现的@Autowired、@Value等待 **
 
 > 1.  自定义类似于@Value，@Autowired的注解
 > 2. 主要用于处理Bean内部的注解实现
