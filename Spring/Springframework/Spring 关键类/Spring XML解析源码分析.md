@@ -4,7 +4,7 @@
 
 ### 2. AbstractApplicationContext#obtainFreshBeanFactory
 
-在**`AbstractApplicationContext`** 抽象类中通过**`obtainFreshBeanFactory`**  的方法来加载XML中的定义的Bean。下面来看一下方法**`obtainFreshBeanFactory`**  的代码：
+在**`AbstractApplicationContext`** 抽象类中通过**`obtainFreshBeanFactory`** 的方法来加载XML中的定义的Bean。下面来看一下方法**`obtainFreshBeanFactory`** 的代码：
 
 ```java
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
