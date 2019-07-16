@@ -237,7 +237,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 ### 总结
 
-**BeanPostProcessor 主要用来处理Bean内部的注解。比如Spring自己实现的@Autowired、@Value等待**
+**BeanPostProcessor 主要用来处理Bean内部的注解。比如Spring自己实现的@Autowired、@Value等**
 
 > 1.  自定义类似于@Value，@Autowired的注解
 > 2. 主要用于处理Bean内部的注解实现
