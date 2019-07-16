@@ -4,7 +4,7 @@
 
 ### 2. AbstractApplicationContext#obtainFreshBeanFactory
 
-在**`AbstractApplicationContext`** 抽象类中通过**`obtainFreshBeanFactory`** 的方法来加载XML中的定义的Bean。下面来看一下方法**`obtainFreshBeanFactory`** 的代码：
+在**AbstractApplicationContext** 抽象类中通过 **`obtainFreshBeanFactory`** 的方法来加载XML中的定义的Bean。下面来看一下方法**`obtainFreshBeanFactory`** 的代码：
 
 ```java
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
@@ -23,7 +23,7 @@
 
   返回BeanFactory的引用
 
-在**`AbstractApplicationContext`**  中 **`refreshBeanFactory`**  是一个抽象的方法，实现主要是有子类实现，对于XML而言，**`AbstractRefreshableApplicationContext`**  实现了该方法：
+在**AbstractApplicationContext** 中**refreshBeanFactory** 是一个抽象的方法，实现主要是有子类实现，对于XML而言，**`AbstractRefreshableApplicationContext`**  实现了该方法：
 
 ```java
 protected final void refreshBeanFactory() throws BeansException {
@@ -51,7 +51,7 @@ protected final void refreshBeanFactory() throws BeansException {
 	}
 ```
 
-通过上面的代码分析可以看到Spring容器加载XML中的定义通过 **`loadBeanDefinitions`** 方法，在**`AbstractRefreshableApplicationContext`** 中是一个抽象的方法。实现在子类中，对于XML的加载Bean的定义实现在 **`AbstractXmlApplicationContext`**  类中：
+通过上面的代码分析可以看到Spring容器加载XML中的定义通过 **`loadBeanDefinitions`** 方法，在**AbstractRefreshableApplicationContext** 中是一个抽象的方法。实现在子类中，对于XML的加载Bean的定义实现在 **`AbstractXmlApplicationContext`**  类中：
 
 ```java
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
@@ -70,7 +70,7 @@ protected final void refreshBeanFactory() throws BeansException {
 	}
 ```
 
-XML的文件的读取是通过 **`XmlBeanDefinitionReader`** 来进行读取数据。在**`AbstractXmlApplicationContext`** 类中有一个**`loadBeanDefinitions(XmlBeanDefinitionReader reader)`**  方法来进行加载XML文件中Bean的定义。
+XML的文件的读取是通过**XmlBeanDefinitionReader** 来进行读取数据。在**AbstractXmlApplicationContext** 类中有一个**`loadBeanDefinitions(XmlBeanDefinitionReader reader)`**  方法来进行加载XML文件中Bean的定义。
 
 ```java
 	protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws BeansException, IOException {
