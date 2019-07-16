@@ -307,3 +307,11 @@ public Object getSingleton(String beanName) {
 	}
 ```
 
+#### 2.3 AbstractBeanFactory#getObjectForBeanInstance方法
+
+通过给定的bean实例获取对象，返回的bean为自己或者是FactoryBean创建的对象。
+
+```java
+
+```
+
