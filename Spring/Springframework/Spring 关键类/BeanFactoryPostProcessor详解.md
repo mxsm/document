@@ -4,7 +4,7 @@
 
 **`BeanFactoryPostProcessor`** 主要用来处理注入Bean到BeanFactory中以及Bean类上面的注解，比如 **@Configuration**
 
-- **PropertySourcesPlaceholderConfigurer和 PropertyPlaceholderConfigurer ** 
+- **PropertySourcesPlaceholderConfigurer和 PropertyPlaceholderConfigurer** 
 
   ```java
   //xml context 元素解析
