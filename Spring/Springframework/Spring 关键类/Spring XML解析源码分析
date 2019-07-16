@@ -1,0 +1,90 @@
+### 1. Spring XML解析
+
+在Spring的配置中XML是一个很重要的配置方案，下面来分析一下Spring是如何把定义在XML中的数据类加载到Spring容器中的。
+
+### 2. AbstractApplicationContext#obtainFreshBeanFactory
+
+在**`AbstractApplicationContext`**抽象类中通过**`obtainFreshBeanFactory`** 的方法来加载XML中的定义的Bean。下面来看一下方法**`obtainFreshBeanFactory`** 的代码：
+
+```java
+	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		refreshBeanFactory();
+		return getBeanFactory();
+	}
+```
+
+通过上面的代码可以看到，方法中只有两个方法：
+
+- **refreshBeanFactory**
+
+  刷新BeanFactory,加载XML
+
+- **getBeanFactory**
+
+  返回BeanFactory的引用
+
+在**`AbstractApplicationContext`** 中 **`refreshBeanFactory`** 是一个抽象的方法，实现主要是有子类实现，对于XML而言，**`AbstractRefreshableApplicationContext`** 实现了该方法：
+
+```java
+protected final void refreshBeanFactory() throws BeansException {
+    	//如果存在BeanFactory首先对之前的进行处理
+		if (hasBeanFactory()) {
+			destroyBeans();
+			closeBeanFactory();
+		}
+		try {
+            //创建BeanFactory
+			DefaultListableBeanFactory beanFactory = createBeanFactory();
+            //设置序列化ID
+			beanFactory.setSerializationId(getId());
+            //设置是否允许循环引用 和 bean的定义覆盖
+			customizeBeanFactory(beanFactory);
+            // 加载bean的定义到Spring容器
+			loadBeanDefinitions(beanFactory);
+			synchronized (this.beanFactoryMonitor) {
+				this.beanFactory = beanFactory;
+			}
+		}
+		catch (IOException ex) {
+			throw new ApplicationContextException("I/O error parsing bean definition source for " + getDisplayName(), ex);
+		}
+	}
+```
+
+通过上面的代码分析可以看到Spring容器加载XML中的定义通过 **`loadBeanDefinitions`** 方法，在**`AbstractRefreshableApplicationContext`** 中是一个抽象的方法。实现在子类中，对于XML的加载Bean的定义实现在 **`AbstractXmlApplicationContext`** 类中：
+
+```java
+	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
+		// 为BeanFactory创建一个 XmlBeanDefinitionReader.
+		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+
+		//beanDefinitionReader设置参数
+		beanDefinitionReader.setEnvironment(this.getEnvironment());
+		beanDefinitionReader.setResourceLoader(this);
+		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
+
+		//初始化XML BeanDefinitionReader
+		initBeanDefinitionReader(beanDefinitionReader);
+        //加载Bean定义
+		loadBeanDefinitions(beanDefinitionReader);
+	}
+```
+
+XML的文件的读取是通过 **`XmlBeanDefinitionReader`** 来进行读取数据。在  **`AbstractXmlApplicationContext`** 类中有一个 **`loadBeanDefinitions(XmlBeanDefinitionReader reader)`** 方法来进行加载XML文件中Bean的定义。
+
+```java
+	protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws BeansException, IOException {
+        //获取配置的Resource进行加载
+		Resource[] configResources = getConfigResources();
+		if (configResources != null) {
+			reader.loadBeanDefinitions(configResources);
+		}
+        //获取配置的地址进行加载--（用ClassPathXmlApplicationContext创建填入application.xml的就是通过这个地方加载）
+		String[] configLocations = getConfigLocations();
+		if (configLocations != null) {
+			reader.loadBeanDefinitions(configLocations);
+		}
+	}
+```
+
+所以接下来主要加载都是通过 **`XmlBeanDefinitionReader#loadBeanDefinitions`** 方法来加载XML中的Bean的定义。
