@@ -148,4 +148,195 @@ XML的文件的读取是通过**XmlBeanDefinitionReader** 来进行读取数据�
 		}
 	}
 ```
+在**`loadBeanDefinitions`** 实现在XML中是通过**`XmlBeanDefinitionReader`** 中实现
+
+```java
+	public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
+		Assert.notNull(encodedResource, "EncodedResource must not be null");
+		if (logger.isTraceEnabled()) {
+			logger.trace("Loading XML bean definitions from " + encodedResource);
+		}
+
+		Set<EncodedResource> currentResources = this.resourcesCurrentlyBeingLoaded.get();
+		if (currentResources == null) {
+			currentResources = new HashSet<>(4);
+			this.resourcesCurrentlyBeingLoaded.set(currentResources);
+		}
+		if (!currentResources.add(encodedResource)) {
+			throw new BeanDefinitionStoreException(
+					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
+		}
+		try {
+			InputStream inputStream = encodedResource.getResource().getInputStream();
+			try {
+				InputSource inputSource = new InputSource(inputStream);
+				if (encodedResource.getEncoding() != null) {
+					inputSource.setEncoding(encodedResource.getEncoding());
+				}
+                //加载xml中的Bean定义
+				return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
+			}
+			finally {
+				inputStream.close();
+			}
+		}
+		catch (IOException ex) {
+			throw new BeanDefinitionStoreException(
+					"IOException parsing XML document from " + encodedResource.getResource(), ex);
+		}
+		finally {
+			currentResources.remove(encodedResource);
+			if (currentResources.isEmpty()) {
+				this.resourcesCurrentlyBeingLoaded.remove();
+			}
+		}
+	}
+
+```
+
+通过上面的代码可以看出来**`doLoadBeanDefinitions`** 主要通过这个方法加载XML中的Bean定义
+
+```java
+protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
+			throws BeanDefinitionStoreException {
+
+			//读取 xml document
+			Document doc = doLoadDocument(inputSource, resource);
+    		//往Spring容器中注册 Bean定义
+			int count = registerBeanDefinitions(doc, resource);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Loaded " + count + " bean definitions from " + resource);
+			}
+			return count;
+    		// 省略了try catch模块
+
+	}
+```
+
+**`XmlBeanDefinitionReader#registerBeanDefinitions(doc, resource)`** 方法就是加载类的定义
+
+```java
+	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
+		int countBefore = getRegistry().getBeanDefinitionCount();
+        //注册Bean
+		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+		return getRegistry().getBeanDefinitionCount() - countBefore;
+	}
+
+```
+
+**`BeanDefinitionDocumentReader#registerBeanDefinitions`** 进行注册，而**`registerBeanDefinitions`** 方法的实现在**`DefaultBeanDefinitionDocumentReader`** 类
+
+```java
+	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
+		this.readerContext = readerContext;
+		doRegisterBeanDefinitions(doc.getDocumentElement());
+	}
+
+	protected void doRegisterBeanDefinitions(Element root) {
+
+		BeanDefinitionParserDelegate parent = this.delegate;
+		this.delegate = createDelegate(getReaderContext(), root, parent);
+
+		if (this.delegate.isDefaultNamespace(root)) {
+			String profileSpec = root.getAttribute(PROFILE_ATTRIBUTE);
+			if (StringUtils.hasText(profileSpec)) {
+				String[] specifiedProfiles = StringUtils.tokenizeToStringArray(
+						profileSpec, BeanDefinitionParserDelegate.MULTI_VALUE_ATTRIBUTE_DELIMITERS);
+				// We cannot use Profiles.of(...) since profile expressions are not supported
+				// in XML config. See SPR-12458 for details.
+				if (!getReaderContext().getEnvironment().acceptsProfiles(specifiedProfiles)) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Skipped XML bean definition file due to specified profiles [" + profileSpec +
+								"] not matching: " + getReaderContext().getResource());
+					}
+					return;
+				}
+			}
+		}
+
+		preProcessXml(root);
+        //解析Bean的定义
+		parseBeanDefinitions(root, this.delegate);
+		postProcessXml(root);
+
+		this.delegate = parent;
+	}
+```
+
+分析一下**`parseBeanDefinitions(root, this.delegate)`** 方法中是如何进行数据解析：
+
+```java
+	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
+        //判断是否为默认的命名空间 http://www.springframework.org/schema/beans
+		if (delegate.isDefaultNamespace(root)) {
+			NodeList nl = root.getChildNodes();
+			for (int i = 0; i < nl.getLength(); i++) {
+				Node node = nl.item(i);
+				if (node instanceof Element) {
+					Element ele = (Element) node;
+                    //判断是否是自定义的命名空间
+					if (delegate.isDefaultNamespace(ele)) {
+                        //解析默认的命名空间
+						parseDefaultElement(ele, delegate);
+					}
+					else {
+                        //解析自定义的命名空间
+						delegate.parseCustomElement(ele);
+					}
+				}
+			}
+		}
+		else {
+			delegate.parseCustomElement(root);
+		}
+	}
+
+	private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
+        //解析import
+		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
+			importBeanDefinitionResource(ele);
+		}
+        //解析alias
+		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
+			processAliasRegistration(ele);
+		}
+        //解析bean
+		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+			processBeanDefinition(ele, delegate);
+		}
+        //解析beans
+		else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
+			// recurse
+			doRegisterBeanDefinitions(ele);
+		}
+	}
+```
+
+分析一下如何处理自定义的XML通过**`BeanDefinitionParserDelegate#parseCustomElement`** 方法
+
+```java
+	public BeanDefinition parseCustomElement(Element ele) {
+		return parseCustomElement(ele, null);
+	}
+
+	@Nullable
+	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
+        //获取命名空间的URI
+		String namespaceUri = getNamespaceURI(ele);
+		if (namespaceUri == null) {
+			return null;
+		}
+        //获取处理命名空间的NamespaceHandler--
+		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
+		if (handler == null) {
+			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
+			return null;
+		}
+		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
+	}
+
+```
+
 
