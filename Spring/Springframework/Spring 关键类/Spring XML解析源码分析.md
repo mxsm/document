@@ -148,7 +148,7 @@ XML的文件的读取是通过**XmlBeanDefinitionReader** 来进行读取数据�
 		}
 	}
 ```
-在**`loadBeanDefinitions`** 实现在XML中是通过**`XmlBeanDefinitionReader`** 中实现
+在 **`loadBeanDefinitions`** 实现在XML中是通过 **`XmlBeanDefinitionReader`** 中实现
 
 ```java
 	public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
@@ -194,7 +194,7 @@ XML的文件的读取是通过**XmlBeanDefinitionReader** 来进行读取数据�
 
 ```
 
-通过上面的代码可以看出来**`doLoadBeanDefinitions`** 主要通过这个方法加载XML中的Bean定义
+通过上面的代码可以看出来 **`doLoadBeanDefinitions`** 主要通过这个方法加载XML中的Bean定义
 
 ```java
 protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
@@ -226,7 +226,7 @@ protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 
 ```
 
-**`BeanDefinitionDocumentReader#registerBeanDefinitions`** 进行注册，而**`registerBeanDefinitions`** 方法的实现在**`DefaultBeanDefinitionDocumentReader`** 类
+**`BeanDefinitionDocumentReader#registerBeanDefinitions`** 进行注册，而 **`registerBeanDefinitions`** 方法的实现在 **DefaultBeanDefinitionDocumentReader** 类
 
 ```java
 	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
@@ -265,7 +265,7 @@ protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 	}
 ```
 
-分析一下**`parseBeanDefinitions(root, this.delegate)`** 方法中是如何进行数据解析：
+分析一下 **parseBeanDefinitions(root, this.delegate)** 方法中是如何进行数据解析：
 
 ```java
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
@@ -314,7 +314,7 @@ protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 	}
 ```
 
-分析一下如何处理自定义的XML通过**`BeanDefinitionParserDelegate#parseCustomElement`** 方法
+分析一下如何处理自定义的XML通过 **BeanDefinitionParserDelegate#parseCustomElement** 方法
 
 ```java
 	public BeanDefinition parseCustomElement(Element ele) {
