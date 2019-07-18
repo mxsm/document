@@ -217,14 +217,29 @@ protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredTy
 
 从源码分析一下 **`doGetBean`** 的执行流程如下：
 
-1. 转换beanName
-2. 从缓存中获取实例
+1. **转换beanName**
+
+   > 传入的name参数可能是别名，也可能是FactoryBean，索引还需要进行一系列解析
+
+   - 去除FactoryBean的修饰符，也就是如果name=也就是如果name = "&factoryBean"，那么会首先去除&而使name = "factoryBean"
+   - 将别名alias转换为最终指向的beanName，比如别名A执行名称为B的bean，而B没有指向任何其他的bean，即为最终的bean，则返回B;但是如果B又指向C，而是C是最终的bean，则返回C。
+
+2. **尝试从缓存中获取原始单例**
+
+   > **这就是Spring的IOC，首先尝试从缓存中加载单例模式**
+
 3. 如果实例不为空，且 args = null。调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
+
 4. 若上面的条件不成立，则到父容器中查找 beanName 对有的 bean 实例，存在则直接返回
+
 5. 若父容器中不存在，则进行下一步操作 -- 合并 BeanDefinition
+
 6. 处理 depends-on 依赖
+
 7. 创建并缓存 bean
+
 8. 调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
+
 9. 按需转换 bean 类型，并返回转换后的 bean 实例
 
 ### 2. 方法的源码解析
