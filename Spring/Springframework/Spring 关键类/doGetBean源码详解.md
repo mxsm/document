@@ -54,6 +54,7 @@ protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredTy
 		 */
 		else {
 			// BeanFactory 不缓存 Prototype 类型的 bean，无法处理该类型 bean 的循环依赖问题
+            //判断是否存在循环依赖
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
@@ -228,19 +229,25 @@ protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredTy
 
    > **这就是Spring的IOC，首先尝试从缓存中加载单例模式**
 
-3. 如果实例不为空，且 args = null。调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
+3. #### 检测是否为FactoryBean并获取Bean以及初始化后处理
 
-4. 若上面的条件不成立，则到父容器中查找 beanName 对有的 bean 实例，存在则直接返回
+   > 在doGetBean方法中频繁出现getObjectForBeanInstance方法，它主要完成对获取的Bean Instance进行检测是否为FactoryBean，如果是FactoryBean则通过工厂方法获取Bean以及初始化后处理
 
-5. 若父容器中不存在，则进行下一步操作 -- 合并 BeanDefinition
+4. #### 创建单例Bean
 
-6. 处理 depends-on 依赖
+   > 如果缓存中没有单例Bean的缓存，则需要从头开始创建单例Bean，这主要是重载getSingleton的重载方法来实现单例Bean的加载。
 
-7. 创建并缓存 bean
+5. #### 原型模式的依赖检查
 
-8. 调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
+   > 只有单例模式才会尝试解决循环依赖，如果存在A中有B的属性，B中有A的属性，那么当依赖注入的时候看，就会产生当A还未创建完的时候因为对于B的创建再次返回创建A，造成循环依赖，也就是情况：isPrototypeCurrentlyInCreation(beanName)判断为true
 
-9. 按需转换 bean 类型，并返回转换后的 bean 实例
+6. **处理 depends-on 依赖**
+
+7. **创建并缓存 bean**
+
+8. **调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例**
+
+9. **按需转换 bean 类型，并返回转换后的 bean 实例**
 
 ### 2. 方法的源码解析
 
@@ -249,6 +256,8 @@ protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredTy
 #### 2.1 transformedBeanName
 
 **`transformedBeanName(name)`**  **`beanName`** 的转换，之前分析过由于 **`name`** 可能是 **`FactoryBean`** 或者普通的 Bean的别名所以需要转换。
+
+> name可能是FactoryBean或者是beanName的别名，用当前这个方法来进行转换成真正的beanName来进行后续的操作
 
 ```java
 protected String transformedBeanName(String name) {
@@ -327,6 +336,42 @@ public Object getSingleton(String beanName) {
 通过给定的bean实例获取对象，返回的bean为自己或者是FactoryBean创建的对象。
 
 ```java
+	protected Object getObjectForBeanInstance(
+			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
+		//判断name是否为Bean FactoryBean的引用
+		if (BeanFactoryUtils.isFactoryDereference(name)) {
+			if (beanInstance instanceof NullBean) {
+				return beanInstance;
+			}
+			if (!(beanInstance instanceof FactoryBean)) {
+				throw new BeanIsNotAFactoryException(transformedBeanName(name), beanInstance.getClass());
+			}
+		}
+
+		//现在beanInstance可能是普通的bena或者FactoryBean，如果是普通的Bean直接返回实例
+		if (!(beanInstance instanceof FactoryBean) || BeanFactoryUtils.isFactoryDereference(name)) {
+			return beanInstance;
+		}
+
+		//如果是FactoryBean，使用FactoryBean来创建一个bean实例
+		Object object = null;
+		if (mbd == null) {
+			object = getCachedObjectForFactoryBean(beanName);
+		}
+		if (object == null) {
+			// Return bean instance from factory.
+			FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
+			// Caches object obtained from FactoryBean if it is a singleton.
+			if (mbd == null && containsBeanDefinition(beanName)) {
+				mbd = getMergedLocalBeanDefinition(beanName);
+			}
+			boolean synthetic = (mbd != null && mbd.isSynthetic());
+            //这里从FactoryBean中获取创建的Bean
+			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
+		}
+		return object;
+	}
 ```
 
+> FactoryBean创建的Bean的名称FactoryBean本身作为一个Bean在Spring容器中是用是否包含 **`&`** 前缀来区分的。
