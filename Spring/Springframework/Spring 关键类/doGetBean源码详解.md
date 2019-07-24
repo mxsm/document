@@ -619,3 +619,5 @@ sharedInstance = getSingleton(beanName, () -> {
 ```
 
 > **`exposedObject = initializeBean(beanName, exposedObject, mbd)`** 这个方法主要执行了我们实现的 BeanPostProcessor。
+>
+> BeanPostProcessor的Bean被单独保存对象的私有变量
