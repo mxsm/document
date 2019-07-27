@@ -10,7 +10,7 @@
 
 以上七个是Spring最常见的配置类注解，下面来分析一下每一个注解在Spring中的实现。
 ### 2. ConfigurationClassPostProcessor源码分析
-ConfigurationClassPostProcessor主要是通过AnnotationConfigUtils#registerAnnotationConfigProcessors方法注入ConfigurationClassPostProcessor的BeanDefinition。下面看一下ConfigurationClassPostProcessor源码
+**`ConfigurationClassPostProcessor`** 主要是通过 **AnnotationConfigUtils#registerAnnotationConfigProcessors** 方法注入 **`ConfigurationClassPostProcessor`** 的 **`BeanDefinition`** 。下面看一下 **`ConfigurationClassPostProcessor`** 源码
 
 ```java
 public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
@@ -18,7 +18,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
     // 省略里面的代码 这里看一下定义		    
 }
 ```
-通过上面可以看到实现了BeanDefinitionRegistryPostProcessor这个接口。这个接口是Spring中的一个很重要的BeanFactoryPostProcessor继承。下面具体看一下里面的两个重要的方法：
+通过上面可以看到实现了 **BeanDefinitionRegistryPostProcessor** 这个接口。这个接口是Spring中的一个很重要的 **BeanFactoryPostProcessor** 继承。下面具体看一下里面的两个重要的方法：
 
 ```java
 public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
@@ -60,7 +60,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 }
 ```
-下面看一下processConfigBeanDefinitions方法
+下面看一下 **`processConfigBeanDefinitions`** 方法
 
 ```java
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
@@ -175,7 +175,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	}
 ```
-解析@Configuration主要是通过ConfigurationClassParser对象的parse方法来进行解析
+解析 **`@Configuration`** 主要是通过 **`ConfigurationClassParser`** 对象的parse方法来进行解析
 
 ```java
 public void parse(Set<BeanDefinitionHolder> configCandidates) {
@@ -206,3 +206,152 @@ public void parse(Set<BeanDefinitionHolder> configCandidates) {
 		this.deferredImportSelectorHandler.process();
 	}
 ```
+
+通过上面的代码发现主要是通过调用 parse方法进行接下来的处理
+
+```java
+	protected final void parse(@Nullable String className, String beanName) throws IOException {
+		Assert.notNull(className, "No bean class name for configuration class bean definition");
+		MetadataReader reader = this.metadataReaderFactory.getMetadataReader(className);
+		processConfigurationClass(new ConfigurationClass(reader, beanName));
+	}
+
+	protected final void parse(Class<?> clazz, String beanName) throws IOException {
+		processConfigurationClass(new ConfigurationClass(clazz, beanName));
+	}
+
+	protected final void parse(AnnotationMetadata metadata, String beanName) throws IOException {
+		processConfigurationClass(new ConfigurationClass(metadata, beanName));
+	}
+```
+
+parse方法有三个重载的方法，三个重写方法都是调用 **processConfigurationClass** 方法，接下来开始分析一下这个方法：
+
+```java
+		protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+		if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+			return;
+		}
+
+		//判断配置类是否存在
+		ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+		if (existingClass != null) {
+
+			//判断configClass是Import注解
+			if (configClass.isImported()) {
+				if (existingClass.isImported()) {
+					//已经存在的ConfigurationClass合并新ConfigurationClass的导入者
+					existingClass.mergeImportedBy(configClass);
+				}
+				// 注册过无需再次注册
+				return;
+			}
+			else {
+				// 找到显式bean定义，可能替换导入
+				// 删除旧的configClass
+				this.configurationClasses.remove(configClass);
+				this.knownSuperclasses.values().removeIf(configClass::equals);
+			}
+		}
+
+		// 递归地处理配置类及其父类
+		SourceClass sourceClass = asSourceClass(configClass);
+		do {
+			sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+		}
+		while (sourceClass != null);
+		//保存已经处理过的configClass
+		this.configurationClasses.put(configClass, configClass);
+	}
+```
+
+看一下 **`doProcessConfigurationClass`** 的方法
+
+```java
+	protected final SourceClass doProcessConfigurationClass(ConfigurationClass configClass, SourceClass sourceClass)
+			throws IOException {
+
+		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
+			// 递归处理成员内部内，处理带@Component注解的类
+			processMemberClasses(configClass, sourceClass);
+		}
+
+		// 处理任何@PropertySource的类
+		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
+				sourceClass.getMetadata(), PropertySources.class,
+				org.springframework.context.annotation.PropertySource.class)) {
+			if (this.environment instanceof ConfigurableEnvironment) {
+				//处理属性
+				processPropertySource(propertySource);
+			}
+			else {
+				logger.info("Ignoring @PropertySource annotation on [" + sourceClass.getMetadata().getClassName() +
+						"]. Reason: Environment must implement ConfigurableEnvironment");
+			}
+		}
+
+		//处理任何 @ComponentScan的类
+		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
+				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
+		if (!componentScans.isEmpty() &&
+				!this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
+			for (AnnotationAttributes componentScan : componentScans) {
+				// The config class is annotated with @ComponentScan -> perform the scan immediately
+				Set<BeanDefinitionHolder> scannedBeanDefinitions =
+						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
+				// Check the set of scanned definitions for any further config classes and parse recursively if needed
+				for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
+					BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
+					if (bdCand == null) {
+						bdCand = holder.getBeanDefinition();
+					}
+					if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+						parse(bdCand.getBeanClassName(), holder.getBeanName());
+					}
+				}
+			}
+		}
+
+		// 处理任何@Import注解的类
+		processImports(configClass, sourceClass, getImports(sourceClass), true);
+
+		//处理任何@ImportResource注解的类
+		AnnotationAttributes importResource =
+				AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
+		if (importResource != null) {
+			String[] resources = importResource.getStringArray("locations");
+			Class<? extends BeanDefinitionReader> readerClass = importResource.getClass("reader");
+			for (String resource : resources) {
+				String resolvedResource = this.environment.resolveRequiredPlaceholders(resource);
+				configClass.addImportedResource(resolvedResource, readerClass);
+			}
+		}
+
+
+		Set<MethodMetadata> beanMethods = retrieveBeanMethodMetadata(sourceClass);
+		for (MethodMetadata methodMetadata : beanMethods) {
+			configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
+		}
+
+		// 处理实现的所有接口中@Bean注解的方法，去上面的处理方法一样，但不是抽象方法，
+		// 因为java8中接口有默认方法和其他具体方法，这里只会处理这些方法的@Bean注解
+		processInterfaces(configClass, sourceClass);
+
+		// 处理父类
+		if (sourceClass.getMetadata().hasSuperClass()) {
+
+			String superclass = sourceClass.getMetadata().getSuperClassName();
+			// java包的父类和已经处理过的父类不处理
+			if (superclass != null && !superclass.startsWith("java") &&
+					!this.knownSuperclasses.containsKey(superclass)) {
+				// 标记父类已经处理过
+				this.knownSuperclasses.put(superclass, configClass);
+				// 返回父类的SourceClass再次进行递归处理
+				return sourceClass.getSuperClass();
+			}
+		}
+		// 没有父类处理完成
+		return null;
+	}
+```
+
