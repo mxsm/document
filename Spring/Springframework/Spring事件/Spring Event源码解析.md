@@ -49,3 +49,4 @@ beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
 ```
 
 把 **`ApplicationContext`** 作为 **`ApplicationEventPublisher`** ，因为 **`ApplicationContext`** 的实现类同样也实现了 **`ApplicationEventPublisher`** 接口。
+
