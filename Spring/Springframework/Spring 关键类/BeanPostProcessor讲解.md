@@ -202,7 +202,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 }
 ```
 
-当前类主要用来处理继承了 **`Aware`** 接口类。用来处理设置对于的数据。
+当前类主要用来处理继承了 **`Aware`** 接口类。然后根据 **`Aware`** 接口的不同实现设置对应的接口对象
 
 
 
@@ -235,12 +235,51 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 > 代码示例地址：https://github.com/mxsm/spring-sample/tree/master/spring-beanPostProcessor
 
+
+
+### 5. BeanPostProcessor Spring源码分析
+
+首先明确一点 **`BeanPostProcessor`**  实现的类都是Spring容器中的一个Bean。在 **`AbstractApplicationContext#refresh`** 是最重要的一个方法：
+
+```java
+public void refresh() throws BeansException, IllegalStateException {
+		synchronized (this.startupShutdownMonitor) {
+				//省了部分代码
+
+			try {
+				
+				//省了部分代码
+				// Register bean processors that intercept bean creation.
+				registerBeanPostProcessors(beanFactory);
+
+			  //省了部分代码
+			}
+
+			catch (BeansException ex) {
+				
+			}
+
+			finally {
+				//省了部分代码
+			}
+		}
+}
+protected void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+	//通过PostProcessorRegistrationDelegate类的静态方法处理
+    PostProcessorRegistrationDelegate.registerBeanPostProcessors(beanFactory, this);
+}
+```
+
+
+
+
+
 ### 总结
 
 **BeanPostProcessor 主要用来处理Bean内部的注解。比如Spring自己实现的@Autowired、@Value等**
 
-> 1.  自定义类似于@Value，@Autowired的注解
-> 2. 主要用于处理Bean内部的注解实现
+> 1.  自定义类似于@Value，@Autowired的注解，主要用于Java类变量或者方法上的注解
+> 2. 主要用于处理Bean内部的注解实现，主要是变量或者方法上面的注解
 
 
 
