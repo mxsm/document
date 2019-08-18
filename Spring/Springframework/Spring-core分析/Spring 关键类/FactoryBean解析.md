@@ -20,7 +20,6 @@ public interface FactoryBean<T> {
 		return true;
 	}
 }
-
 ```
 
 ### 应用场景
