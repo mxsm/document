@@ -204,6 +204,37 @@ public class AnnotationsBasedApplicationInitializer
 </servlet>
 ```
 
+#### 3.3 Servlet 3.x 和 XML Application Context
+创建一个WebApplicationInitializer和一个XML的applications context,去实现onStartup方法
+
+```java
+XmlWebApplicationContext normalWebAppContext = new XmlWebApplicationContext();
+normalWebAppContext.setConfigLocation("/WEB-INF/normal-webapp-servlet.xml");
+ServletRegistration.Dynamic normal/= servletContext.addServlet("normal-webapp", new DispatcherServlet(normalWebAppContext));
+normal.setLoadOnStartup(1);
+normal.addMapping("/api/*");
+```
+
+#### 3.4 Servlet 3.x 和 Java Application Context
+这一次我们配置一个注解上下文实现WebApplicationInitializer: AbstractDispatcherServletInitializer。
+
+```java
+@Override
+protected WebApplicationContext createServletApplicationContext() {
+  
+    AnnotationConfigWebApplicationContext secureWebAppContext = new AnnotationConfigWebApplicationContext();
+    secureWebAppContext.register(SecureWebAppConfig.class);
+    return secureWebAppContext;
+}
+ 
+@Override
+protected String[] getServletMappings() {
+    return new String[] { "/s/api/*" };
+}
+```
+
+
+
 https://www.baeldung.com/spring-web-contexts
 
 https://www.nonelonely.com/article/1552475062917
