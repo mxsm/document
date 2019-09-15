@@ -406,4 +406,83 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 		}
 	}
 ```
-*getHandler* 获取处理器执行器处理链，然后 *getHandlerAdapter* 获取处理器适配器。 *applyPreHandle* 执行
+*getHandler* 获取处理器执行器处理链，然后 *getHandlerAdapter* 获取处理器适配器。 *applyPreHandle* 执行。从上面的有两个几个重要的方法：
+
+```
+//获取执行链
+mappedHandler = getHandler(processedRequest);
+
+//获取执行适配器
+HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
+
+//调用链执行--前置HandlerInterceptor
+mappedHandler.applyPreHandle(processedRequest, response)
+
+//实际处理
+mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
+
+//调用链执行--后置HandlerInterceptor
+mappedHandler.applyPostHandle(processedRequest, response, mv);
+```
+
+接下来一个个来分析上面的方法：
+
+***`mappedHandler = getHandler(processedRequest)`***  方法的分析，看一下源代码：
+
+```java
+	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		if (this.handlerMappings != null) {
+            //从handlerMappings获取HandlerMapping的实现
+			for (HandlerMapping mapping : this.handlerMappings) {
+                //从HandlerMapping实现中获取处理执行调用链
+				HandlerExecutionChain handler = mapping.getHandler(request);
+				if (handler != null) {
+					return handler;
+				}
+			}
+		}
+		return null;
+	}
+```
+
+> HandlerMapping默认实现加载有三个：
+>
+> 1. RequestMappingHandlerMapping
+> 2. BeanNameUrlHandlerMapping
+> 3. SimpleUrlHandlerMapping
+
+默认加载的 ***`RequestMappingHandlerMapping`*** ，看一下如何获取 **`HandlerExecutionChain`** 调用链。 调用的方法 **`AbstractHandlerMapping#getHandler`**
+
+```java
+	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+        //获取内部处理器
+		Object handler = getHandlerInternal(request);
+		if (handler == null) {
+            //如果为空获取默认处理器
+			handler = getDefaultHandler();
+		}
+		if (handler == null) {
+			return null;
+		}
+		// Bean name or resolved handler?
+		if (handler instanceof String) {
+			String handlerName = (String) handler;
+			handler = obtainApplicationContext().getBean(handlerName);
+		}
+
+		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
+
+		//省了日志打印
+
+        //跨域的配置
+		if (CorsUtils.isCorsRequest(request)) {
+			CorsConfiguration globalConfig = this.corsConfigurationSource.getCorsConfiguration(request);
+			CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
+			CorsConfiguration config = (globalConfig != null ? globalConfig.combine(handlerConfig) : handlerConfig);
+			executionChain = getCorsHandlerExecutionChain(request, executionChain, config);
+		}
+
+		return executionChain;
+	}
+```
+
