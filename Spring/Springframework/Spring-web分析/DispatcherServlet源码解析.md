@@ -408,7 +408,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 ```
 *getHandler* 获取处理器执行器处理链，然后 *getHandlerAdapter* 获取处理器适配器。 *applyPreHandle* 执行。从上面的有两个几个重要的方法：
 
-```
+```java
 //获取执行链
 mappedHandler = getHandler(processedRequest);
 
@@ -486,3 +486,21 @@ mappedHandler.applyPostHandle(processedRequest, response, mv);
 	}
 ```
 
+然后就是获取 **`HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler())`** 适配器。
+
+```java
+protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
+		if (this.handlerAdapters != null) {
+			//获取处理适配器
+            for (HandlerAdapter adapter : this.handlerAdapters) {
+				if (adapter.supports(handler)) {
+					return adapter;
+				}
+			}
+		}
+		throw new ServletException("No adapter for handler [" + handler +
+				"]: The DispatcherServlet configuration needs to include a HandlerAdapter that supports this handler");
+	}
+```
+
+适配器默认加载的 **`RequestMappingHandlerAdapter`** 适配器。 **`mappedHandler.applyPreHandle(processedRequest, response)`**  处理 **`HandlerInterceptor`** 的 ***`preHandle`*** 方法。然后 **`mv = ha.handle(processedRequest, response, mappedHandler.getHandler())`** 调用 **`HandlerAdapter`** 的 **`handle`** 方法。 **`mappedHandler.applyPostHandle(processedRequest, response, mv);`** 接下来执行 **`HandlerInterceptor`**  的 ***`postHandle`***。
