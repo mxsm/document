@@ -371,5 +371,3 @@ this.returnValueHandlers.handleReturnValue(
 		handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
 	}
 ```
-
-> 这里就是实现了处理比如Restful风格的API.就是通过RequestResponseBodyMethodProcessor的具体实现来处理。RequestResponseBodyMethodProcessor是一个相对比较重要的类
