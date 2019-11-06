@@ -34,9 +34,23 @@ public interface ApplicationContext extends EnvironmentCapable, ListableBeanFact
   
 -   **BeanFactory**  
 
-   主要用来获取Bean
+   主要用来获取Bean， BeanFactory实现了这BeanDefinitionRegistry和SingletonBeanRegistry两个，把Bean的定义和Bean的管理结合起来。 
 
+-   **Environment** 
 
+   获取环境变量，和环境配置相关的
+
+-   **MessageSource** 
+
+   spring的国际化处理
+
+-   **ApplicationEventPublisher**
+
+   Spring时间发布，和事件相关的接口 
+
+-   **ResourcePatternResolver**
+
+   资源的处理 
 
 对于 **`ApplicationContext`** 的实现主要在 **Java** 的开发项目中有四个：
 
