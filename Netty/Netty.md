@@ -4,7 +4,7 @@
 
 上图显示的是 **`Netty`** 主从模型。
 
-- **Boss NioEventLoopGroup ** 
+- **Boss NioEventLoopGroup** 
 
   这个Boss Group主要是用来监听和轮询Accept请求，然后处理Accept请求处理简历Channel通道，并且将Channel注册到Worker Group
 
