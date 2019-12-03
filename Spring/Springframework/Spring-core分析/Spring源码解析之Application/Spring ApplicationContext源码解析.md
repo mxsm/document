@@ -61,5 +61,5 @@ public interface ApplicationContext extends EnvironmentCapable, ListableBeanFact
 
 > 上面的四个实现大体能够分成两大类：
 >
-> - 对以前传统的XML配置的支持
-> - 对注解的支持
+> - 对以前传统的XML配置的支持从xml读取配置
+> - 对注解的支持，主要通过注解来实现xml中的配置功能
