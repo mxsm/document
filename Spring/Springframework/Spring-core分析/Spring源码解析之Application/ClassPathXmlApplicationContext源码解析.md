@@ -154,7 +154,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 - **`prepareRefresh()`** 
 
-  ```
+  ```java
   protected void prepareRefresh() {
   	// 首先标记为active状态
   	this.startupDate = System.currentTimeMillis();
