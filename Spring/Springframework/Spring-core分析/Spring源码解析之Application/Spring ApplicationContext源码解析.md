@@ -59,7 +59,25 @@ public interface ApplicationContext extends EnvironmentCapable, ListableBeanFact
 - XmlWebApplicationContext
 - AnnotationConfigWebApplicationContext
 
+```mermaid
+graph LR
+   
+    B[Application] --> C[XML]
+    B[Application] --> D[Annotation]
+    C -->C1[XmlWebApplicationContext]
+    C -->C2[ClassPathXmlApplicationContext]
+    D -->D1[AnnotationConfigApplicationContext]
+    D -->D2[AnnotationConfigWebApplicationContext]
+```
+
+
+
 > 上面的四个实现大体能够分成两大类：
 >
 > - 对以前传统的XML配置的支持从xml读取配置
 > - 对注解的支持，主要通过注解来实现xml中的配置功能
+
+下面看一下Application的继承关系：
+
+![图](https://github.com/mxsm/document/blob/master/image/Spring/Springframework/ApplicationContext.png?raw=true)
+
