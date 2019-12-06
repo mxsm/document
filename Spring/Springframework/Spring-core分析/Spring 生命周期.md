@@ -1,3 +1,5 @@
+### 1. Spring Bean的生命周期
+
 ```flow
 st=>start: 加载BeanDefination
 circularCondition=>condition: 获取依赖并且判断不是循环依赖
@@ -20,5 +22,5 @@ st->circularCondition
 circularCondition(yes)->beforeInstantiation->CandidateConstructors->afterInstantiation->postProcessProperties->instantiateBean->mergedBeanDefinitionPostProcessor->invokeAwareMethods->BeanPostProcessorBeforeInitialization->invokeInitMethods->BeanPostProcessorsAfterInitialization->earlySingletonExposure->registerDisposableBeanIfNecessary->e
 
 circularCondition(no)->e
-
 ```
+
