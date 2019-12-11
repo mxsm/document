@@ -1,4 +1,4 @@
-### 1. @Autowired和@Value注解
+### 1. @Autowired和@Value注解--Spring5.2.X
 
 首先来看一下这两个注解的源码
 
@@ -75,4 +75,130 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 ```
 
-从这个构造函数可以看出来主要处理  **@Autowired、@Value、javax.inject.Inject** 。 第三个是javax。这就是对 JSR-330 标准的支持。
+从这个构造函数可以看出来主要处理  **@Autowired、@Value、javax.inject.Inject** 。 第三个是javax。这就是对 JSR-330 标准的支持。通过调用 **`postProcessProperties`** 方法来处理以上的三个注解
+
+```java
+	@Override
+	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+		try {
+			metadata.inject(bean, beanName, pvs);
+		}
+		catch (BeanCreationException ex) {
+			throw ex;
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
+		}
+		return pvs;
+	}
+```
+
+主要是通过 **`findAutowiringMetadata`** 方法来获取自动注入元数据。以及通过 **`InjectionMetadata#inject`** 方法来注入元数据。
+
+```java
+	private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
+		// Fall back to class name as cache key, for backwards compatibility with custom callers.
+		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
+		// 从缓存中获取注入元数据
+		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+		//判断是否需要刷新
+        if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+			synchronized (this.injectionMetadataCache) {
+				metadata = this.injectionMetadataCache.get(cacheKey);
+				if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+					if (metadata != null) {
+						metadata.clear(pvs);
+					}
+                    //创建注入元数据
+					metadata = buildAutowiringMetadata(clazz);
+                    //缓存注入元数据
+					this.injectionMetadataCache.put(cacheKey, metadata);
+				}
+			}
+		}
+		return metadata;
+	}
+```
+
+源代码可以看出来主要是有两个方法：
+
+- **InjectionMetadata.needsRefresh**
+
+  判断从缓存中获取的注入元数据是否需要刷新：
+
+  ```java
+  	public static boolean needsRefresh(@Nullable InjectionMetadata metadata, Class<?> clazz) {
+  		return (metadata == null || metadata.targetClass != clazz);
+  	}
+  ```
+
+- **buildAutowiringMetadata**
+
+  创建自动注入的元数据
+
+下面来看一下 **`buildAutowiringMetadata`** 的源码是如何创建自动注入元数据的。
+
+```java
+private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
+		//判断是否包含 @Autowired @Value 或者@Inject注解
+       if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
+			return InjectionMetadata.EMPTY;
+		}
+
+		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+		Class<?> targetClass = clazz;
+
+		do {
+			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
+			//通过反射获取targetClass
+			ReflectionUtils.doWithLocalFields(targetClass, field -> {
+				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
+				if (ann != null) {
+					if (Modifier.isStatic(field.getModifiers())) {
+						if (logger.isInfoEnabled()) {
+							logger.info("Autowired annotation is not supported on static fields: " + field);
+						}
+						return;
+					}
+					boolean required = determineRequiredStatus(ann);
+					currElements.add(new AutowiredFieldElement(field, required));
+				}
+			});
+
+			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+					return;
+				}
+				MergedAnnotation<?> ann = findAutowiredAnnotation(bridgedMethod);
+				if (ann != null && method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+					if (Modifier.isStatic(method.getModifiers())) {
+						if (logger.isInfoEnabled()) {
+							logger.info("Autowired annotation is not supported on static methods: " + method);
+						}
+						return;
+					}
+					if (method.getParameterCount() == 0) {
+						if (logger.isInfoEnabled()) {
+							logger.info("Autowired annotation should only be used on methods with parameters: " +
+									method);
+						}
+					}
+					boolean required = determineRequiredStatus(ann);
+					PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+					currElements.add(new AutowiredMethodElement(method, required, pd));
+				}
+			});
+
+			elements.addAll(0, currElements);
+			targetClass = targetClass.getSuperclass();
+		}
+		while (targetClass != null && targetClass != Object.class);
+
+		return InjectionMetadata.forElements(elements, clazz);
+	}
+```
+
+
+
