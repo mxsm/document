@@ -200,5 +200,140 @@ private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
 	}
 ```
 
+通过上面的代码可以看出来处理主要分成了两类：
 
+- 处理类的字段上面的注解
+- 处理方法上面注解
 
+根据处理的不同的数据创建两个不同的自动注入元素。字段的创建 **`AutowiredFieldElement`**  、 方法上面的注解创建 **`AutowiredMethodElement`** 。
+
+```java
+private class AutowiredFieldElement extends InjectionMetadata.InjectedElement {
+ //省略代码   
+}
+private class AutowiredMethodElement extends InjectionMetadata.InjectedElement {
+    //省略代码
+}
+```
+
+以上两个都是内部类。都继承了 **`InjectionMetadata.InjectedElement`**  的接口。根据不同类型创建好以后通过调用：
+
+```java
+return InjectionMetadata.forElements(elements, clazz);
+```
+
+创建返回数据。也就是调用 **`findAutowiringMetadata`** 方法中的 **`buildAutowiringMetadata`** 方法。在前面分析过
+
+```java
+	public void processInjection(Object bean) throws BeanCreationException {
+		Class<?> clazz = bean.getClass();
+		InjectionMetadata metadata = findAutowiringMetadata(clazz.getName(), clazz, null);
+		try {
+            //这里就是注入数据。
+			metadata.inject(bean, null, null);
+		}
+		catch (BeanCreationException ex) {
+			throw ex;
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(
+					"Injection of autowired dependencies failed for class [" + clazz + "]", ex);
+		}
+	}
+```
+这里可以分一下 ***`InjectionMetadata#inject`*** 方法
+
+```java
+	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+		Collection<InjectedElement> checkedElements = this.checkedElements;
+		Collection<InjectedElement> elementsToIterate =
+				(checkedElements != null ? checkedElements : this.injectedElements);
+		if (!elementsToIterate.isEmpty()) {
+			for (InjectedElement element : elementsToIterate) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Processing injected element of bean '" + beanName + "': " + element);
+				}
+				//主要是InjectedElement#inject来处理
+				element.inject(target, beanName, pvs);
+			}
+		}
+	}
+```
+最终是通过调用 ***`InjectedElement#inject`*** 方法来注入。下面来分析一下  **AutowiredFieldElement** 和 **AutowiredMethodElement** 的实现。
+
+```java
+private class AutowiredFieldElement extends InjectionMetadata.InjectedElement {
+
+		private final boolean required;
+
+		private volatile boolean cached = false;
+
+		@Nullable
+		private volatile Object cachedFieldValue;
+
+		public AutowiredFieldElement(Field field, boolean required) {
+			super(field, null);
+			this.required = required;
+		}
+@Override
+		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+			Field field = (Field) this.member;
+			Object value;
+			//第一次不会进入因为cached默认为false
+			if (this.cached) {
+				value = resolvedCachedArgument(beanName, this.cachedFieldValue);
+			}
+			else {
+				//创建一个依赖的描述
+				DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
+				desc.setContainingClass(bean.getClass());
+				Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
+				Assert.state(beanFactory != null, "No BeanFactory available");
+				//获取类型转换器
+				TypeConverter typeConverter = beanFactory.getTypeConverter();
+				try {
+					//获取值
+					value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
+				}
+				catch (BeansException ex) {
+					throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
+				}
+				//处理依赖注入的数据
+				synchronized (this) {
+					if (!this.cached) {
+						if (value != null || this.required) {
+							this.cachedFieldValue = desc;
+							registerDependentBeans(beanName, autowiredBeanNames);
+							if (autowiredBeanNames.size() == 1) {
+								String autowiredBeanName = autowiredBeanNames.iterator().next();
+								if (beanFactory.containsBean(autowiredBeanName) &&
+										beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
+									this.cachedFieldValue = new ShortcutDependencyDescriptor(
+											desc, autowiredBeanName, field.getType());
+								}
+							}
+						}
+						else {
+							this.cachedFieldValue = null;
+						}
+						this.cached = true;
+					}
+				}
+			}
+			//在Value不为空的情况下通过反射设置值
+			if (value != null) {
+				ReflectionUtils.makeAccessible(field);
+				field.set(bean, value);
+			}
+		}
+	}
+```
+ ***`AutowiredMethodElement`*** 的实现和 ***`AutowiredFieldElement`*** 实现差不多。
+
+### 3. 自定义拓展
+自定义的拓展可以参考一下几个项目：
+
+- [自定义的Nacos的拓展项目地址](https://github.com/mxsm/spring-sample/tree/master/mxsm-nacos)
+- [阿里巴巴的Nacos项目Spring拓展](https://github.com/nacos-group/nacos-spring-project)
+
+第一个项目是自己写的，类似于@Value注解。
