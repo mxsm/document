@@ -204,3 +204,73 @@ protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredTy
 
 ![](https://github.com/mxsm/document/blob/master/image/Spring/Springframework/doGetBean%E6%B5%81%E7%A8%8B.png?raw=true)
 
+通过上面的源码可以看出来 ***`Object sharedInstance = getSingleton(beanName)`*** 调用获取是否在缓存中存在。看一下代码
+
+```java
+@Override
+@Nullable
+public Object getSingleton(String beanName) {
+	return getSingleton(beanName, true);
+}
+
+@Nullable
+	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		//从 singletonObjects 获取实例，singletonObjects 中的实例都是准备好的 bean 实例，可以直接使用
+        Object singletonObject = this.singletonObjects.get(beanName);
+		// 判断 beanName 对应的 bean 是否正在创建中
+        if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			synchronized (this.singletonObjects) {
+                //// 从 earlySingletonObjects 中获取提前曝光的 bean
+				singletonObject = this.earlySingletonObjects.get(beanName);
+				if (singletonObject == null && allowEarlyReference) {
+					// 获取相应的 bean 工厂
+                    ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+					if (singletonFactory != null) {
+                        // 提前曝光 bean 实例（raw bean），用于解决循环依赖
+						singletonObject = singletonFactory.getObject();
+                        // 将 singletonObject 放入earlySingletonObjects缓存中，并将 singletonFactory 从缓存中移除
+						this.earlySingletonObjects.put(beanName, singletonObject);
+						this.singletonFactories.remove(beanName);
+					}
+				}
+			}
+		}
+		return singletonObject;
+	}
+```
+
+看一下单例模式的创建的 ***`AbstractAutowireCapableBeanFactory#createBean`*** 方法：
+
+```java
+@Override
+protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)throws BeanCreationException {
+		//删除部分无关紧要的代码
+
+		RootBeanDefinition mbdToUse = mbd;
+		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
+		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
+			mbdToUse = new RootBeanDefinition(mbd);
+			mbdToUse.setBeanClass(resolvedClass);
+		}
+
+			//准备方法重写
+			mbdToUse.prepareMethodOverrides();
+			
+    		//执行InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation的方法
+    		//如果bean不等于NULL还会执行BeanPostProcessor#postProcessAfterInitialization
+			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+			if (bean != null) {
+				return bean;
+			}
+			//创建Bean
+			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
+
+	}
+```
+
+从代码可以看出来如果存在 ***`InstantiationAwareBeanPostProcessor`*** 处理器，调用 **`InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation`** 方法。如果该方法执行的返回的Bean是空就调用 ***`AbstractAutowireCapableBeanFactory#doCreateBean`*** 方法。
+
+```java
+
+```
+
