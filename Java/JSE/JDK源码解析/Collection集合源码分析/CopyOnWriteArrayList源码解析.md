@@ -91,7 +91,7 @@ public boolean add(E e) {
             //将新添加的数据设置到最后
             newElements[len] = e;
             //将array指向新的newElements --内存可见(array变量被volatile修饰)
-            setArray(newElements --);
+            setArray(newElements);
             return true;
         } finally {
             //释放锁
