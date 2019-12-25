@@ -841,7 +841,14 @@ final void removeTreeNode(HashMap<K,V> map, Node<K,V>[] tab,boolean movable) {
         }
 ```
 
-
+> 注意：HashMap如果key为null,那么存放的桶的位置为第一个也就是index=0的位置。由源码可以看出来
+>
+> ```java
+>     static final int hash(Object key) {
+>         int h;
+>         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+>     }
+> ```
 
 ### 相关参考链接
 
