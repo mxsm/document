@@ -1,6 +1,6 @@
 
 
-### 现在的相关文档会放到 [https://blog.ljbmxsm.com](https://blog.ljbmxsm.com)我的博客下面，markdown文件在[blog项目的文件夹里面](https://github.com/mxsm/blog/tree/master/source/_posts)
+### 现在的相关文档会放到 [https://blog.ljbmxsm.com](https://blog.ljbmxsm.com)我的博客下面，markdown文件在[blog项目的文件夹里面](https://github.com/mxsm/blog/tree/master/source/_posts) 
 
 # 1. 学习笔记分享
 
